@@ -9,8 +9,8 @@ import {
 // 部署提醒：
 // 1. 若要使用 Google Sheets 真實資料，請將 USE_MOCK_DATA 改為 false
 // 2. 請在 GAS_API_URL 填入您部署好的 Google Apps Script 網頁應用程式網址
-const USE_MOCK_DATA = true; 
-const GAS_API_URL = ""; 
+const USE_MOCK_DATA = false; 
+const GAS_API_URL = "https://docs.google.com/spreadsheets/d/1avSAEzLmrJPnEA5hU01IoN5enqWqfF_hFBPEoFaaOR8/edit?gid=1321463893#gid=1321463893"; 
 
 // --- 模擬資料 (Mock Data) ---
 // 這是當 USE_MOCK_DATA = true 時會顯示的測試資料
