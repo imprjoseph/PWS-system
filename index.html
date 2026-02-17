@@ -55,6 +55,10 @@
             border-color: #F28C00 !important;
             box-shadow: 0 0 0 3px rgba(242, 140, 0, 0.1);
         }
+
+        /* 隱藏滾動條但保留功能 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body>
@@ -66,11 +70,11 @@
         // ==========================================
         // --- 連線設定區 ---
         // ==========================================
-        const USE_MOCK_DATA = false; // 已切換為正式連線模式
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzeurryJ4gtk2EHdcDTbeGDbTXO7exOmh1qUZ_tlcp8VD6FfPdnMV9G_xPMG2881DjQ/exec";
+        const USE_MOCK_DATA = false; 
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxx1eJOL1SKmC8r9ninPwZmdUiTiYR2IEp6h2J0RWHcYwWjSVFQjhQ3ZHZxdRGzfQ4/exec";
         const logoUrl = "logo.png";
 
-        // --- 核心網路連線功能 (帶有重試機制) ---
+        // --- 核心連線函式 ---
         const callGAS = async (payload, retries = 3) => {
             if (USE_MOCK_DATA) return null;
             for (let i = 0; i < retries; i++) {
@@ -79,7 +83,9 @@
                         method: 'POST',
                         body: JSON.stringify(payload)
                     });
-                    return await response.json();
+                    const data = await response.json();
+                    if (data.status === 'error') throw new Error(data.message);
+                    return data;
                 } catch (err) {
                     if (i === retries - 1) throw err;
                     await new Promise(res => setTimeout(res, 1000));
@@ -88,13 +94,11 @@
         };
 
         // ==========================================
-        // 1. 子組件 (定義在 App 外，徹底解決打字跳開問題)
+        // 1. 子組件 (定義在外部以解決打字焦點跳開問題)
         // ==========================================
 
-        // --- 登入畫面 ---
         const LoginPage = ({ username, setUsername, password, setPassword, handleLogin, loading, error }) => (
             <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 relative">
-                {/* 背景裝飾比例修正 */}
                 <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-orange-50 rounded-full blur-[120px] opacity-60"></div>
                 <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-blue-50 rounded-full blur-[120px] opacity-60"></div>
 
@@ -102,12 +106,7 @@
                     <div className="bg-white rounded-[2.5rem] shadow-[0_25px_50px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden">
                         <div className="p-10 pb-6 text-center">
                             <div className="flex justify-center mb-8 min-h-[80px] items-center">
-                                <img 
-                                    src={logoUrl} 
-                                    className="company-logo" 
-                                    alt="impr Logo"
-                                    onError={(e) => { e.target.src = 'https://via.placeholder.com/200x80?text=impr+Consultants'; }} 
-                                />
+                                <img src={logoUrl} className="company-logo" alt="impr Logo" onError={(e) => { e.target.src = 'https://via.placeholder.com/200x80?text=impr+Consultants'; }} />
                             </div>
                             <h2 className="text-2xl font-black text-slate-800 tracking-tight">專案管考自動化系統</h2>
                             <p className="text-slate-400 font-bold text-[10px] mt-1 uppercase tracking-[0.2em]">Strategic PR Management</p>
@@ -116,33 +115,19 @@
                         <form onSubmit={handleLogin} className="p-10 pt-0 space-y-5">
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Account</label>
-                                <input 
-                                    type="text" 
-                                    value={username} 
-                                    onChange={(e) => setUsername(e.target.value)}
+                                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
                                     className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-700 transition-all"
-                                    placeholder="帳號 (admin / staff)" 
-                                />
+                                    placeholder="輸入帳號" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
-                                <input 
-                                    type="password" 
-                                    value={password} 
-                                    onChange={(e) => setPassword(e.target.value)}
+                                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                                     className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-700 transition-all"
-                                    placeholder="密碼" 
-                                />
+                                    placeholder="輸入密碼" />
                             </div>
-                            
                             {error && <div className="text-[11px] text-red-500 font-bold bg-red-50 p-3 rounded-lg border border-red-100">{error}</div>}
-                            
-                            <button 
-                                type="submit" 
-                                disabled={loading} 
-                                className="w-full py-4 bg-impr-orange text-white rounded-xl font-black text-lg shadow-xl shadow-orange-600/20 hover:bg-orange-600 transition-all active:scale-[0.98] disabled:bg-slate-300 mt-2"
-                            >
-                                {loading ? "連線驗證中..." : "登入系統"}
+                            <button type="submit" disabled={loading} className="w-full py-4 bg-impr-orange text-white rounded-xl font-black text-lg shadow-xl shadow-orange-600/20 hover:bg-orange-600 transition-all active:scale-[0.98] disabled:bg-slate-300 mt-2">
+                                {loading ? "驗證中..." : "登入系統"}
                             </button>
                         </form>
                     </div>
@@ -150,17 +135,16 @@
             </div>
         );
 
-        // --- 新增專案 Modal ---
         const CreateActivityModal = ({ isOpen, onClose, onCreate, loading }) => {
             const [data, setData] = useState({ name: '', startDate: '', endDate: '' });
             if (!isOpen) return null;
             return (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 border border-white">
-                        <h3 className="text-xl font-black text-slate-800 mb-6 italic tracking-tight">啟動新顧問合約</h3>
+                        <h3 className="text-xl font-black text-slate-800 mb-6 italic tracking-tight">新增專案計畫</h3>
                         <div className="space-y-4">
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">合約/專案名稱</label>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">專案名稱</label>
                                 <input type="text" placeholder="例如：2025 全球電子展" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold"
                                        onChange={(e) => setData({...data, name: e.target.value})} />
                             </div>
@@ -179,9 +163,63 @@
                         </div>
                         <div className="mt-8 flex gap-3">
                             <button onClick={onClose} className="flex-1 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200">取消</button>
-                            <button onClick={() => onCreate(data)} disabled={loading} className="flex-1 py-3 bg-impr-orange text-white font-black rounded-xl shadow-lg hover:bg-orange-600">
-                                {loading ? "寫入中..." : "建立專案"}
+                            <button onClick={() => onCreate(data)} disabled={loading} className="flex-1 py-3 bg-impr-orange text-white font-black rounded-xl shadow-lg">
+                                {loading ? "正在生成任務..." : "新增專案"}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ActivityDetailModal = ({ activityId, onClose, progressData, updateTaskStatus, loading }) => {
+            const data = progressData[activityId];
+            if (!data) return null;
+            
+            return (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+                    <div className="bg-white w-full max-w-4xl max-h-[85vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-800">專案任務明細</h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase">Project Detail View</p>
+                            </div>
+                            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 hover:text-slate-800 transition-all">✕</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30 no-scrollbar">
+                            {data.parentTasks && data.parentTasks.map(parent => (
+                                <div key={parent.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <span className="bg-slate-800 text-white text-xs px-2 py-1 rounded font-mono font-bold">{parent.code}</span>
+                                            <span className="font-black text-slate-800 text-sm">{parent.name}</span>
+                                        </div>
+                                        <span className="text-[10px] font-black text-impr-orange">{parent.calculatedProgress}% 完成</span>
+                                    </div>
+                                    <div className="p-2">
+                                        <table className="w-full text-xs">
+                                            <tbody className="divide-y divide-slate-50">
+                                                {data.allTasks.filter(t => t.code.startsWith(parent.code + '.') || t.code === parent.code).map(task => (
+                                                    <tr key={task.id} className="hover:bg-slate-50/50">
+                                                        <td className="p-3 font-mono text-slate-300 w-12">{task.code}</td>
+                                                        <td className="p-3 font-bold text-slate-700">{task.name}</td>
+                                                        <td className="p-3 text-slate-400">{task.assignee}</td>
+                                                        <td className="p-3 text-right">
+                                                            <button 
+                                                                onClick={() => updateTaskStatus(task.id, task.status == 100 ? 0 : 100)}
+                                                                disabled={loading}
+                                                                className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${task.status == 100 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-900 text-white'}`}
+                                                            >
+                                                                {task.status == 100 ? '已完成' : '回報完成'}
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -201,12 +239,10 @@
             const [password, setPassword] = useState('');
             const [error, setError] = useState('');
             const [isCreateOpen, setIsCreateOpen] = useState(false);
+            const [selectedActivityId, setSelectedActivityId] = useState(null);
 
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            });
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
-            // --- 抓取 Google Sheet 資料 ---
             const fetchData = useCallback(async (currentUser) => {
                 setLoading(true);
                 try {
@@ -215,13 +251,10 @@
                         setActivities(res.activities || []);
                         setTasks(res.tasks || []);
                     }
-                } catch (err) {
-                    console.error("Fetch Data Error:", err);
-                }
+                } catch (err) { console.error(err); }
                 setLoading(false);
             }, []);
 
-            // --- 處理登入 ---
             const handleLogin = async (e) => {
                 e.preventDefault();
                 setLoading(true);
@@ -231,16 +264,11 @@
                     if (res && res.status === 'success') {
                         setUser(res.user);
                         await fetchData(res.user);
-                    } else {
-                        setError(res ? res.message : '連線失敗，請檢查網址');
-                    }
-                } catch (err) {
-                    setError('Google Sheets 連線錯誤');
-                }
+                    } else { setError(res ? res.message : '連線錯誤'); }
+                } catch (err) { setError('Google Sheets 權限或位址錯誤'); }
                 setLoading(false);
             };
 
-            // --- 處理建立新專案 ---
             const handleCreate = async (data) => {
                 if (!data.name) return;
                 setLoading(true);
@@ -250,23 +278,41 @@
                         await fetchData(user);
                         setIsCreateOpen(false);
                     }
-                } catch (err) {
-                    alert('建立失敗');
-                }
+                } catch (err) { alert('新增專案失敗：' + err.message); }
                 setLoading(false);
             };
 
-            if (!user) return (
-                <LoginPage 
-                    username={username} setUsername={setUsername} 
-                    password={password} setPassword={setPassword} 
-                    handleLogin={handleLogin} loading={loading} error={error} 
-                />
-            );
+            const handleUpdateStatus = async (taskId, newStatus) => {
+                setLoading(true);
+                try {
+                    const res = await callGAS({ action: 'updateTask', taskId, status: newStatus });
+                    if (res && res.status === 'success') {
+                        await fetchData(user);
+                    }
+                } catch (err) { alert('更新狀態失敗'); }
+                setLoading(false);
+            };
+
+            const calculateProgress = useMemo(() => {
+                const activityMap = {};
+                activities.forEach(act => {
+                    const actTasks = tasks.filter(t => t.activityId === act.id);
+                    const parentTasks = actTasks.filter(t => !String(t.code).includes('.'));
+                    const parentDetails = parentTasks.map(pTask => {
+                        const children = actTasks.filter(t => t.code.startsWith(pTask.code + '.'));
+                        let pProgress = children.length > 0 ? Math.round((children.filter(c => c.status == 100).length / children.length) * 100) : Number(pTask.status);
+                        return { ...pTask, calculatedProgress: pProgress };
+                    });
+                    const totalProg = parentDetails.length > 0 ? Math.round(parentDetails.reduce((sum, p) => sum + p.calculatedProgress, 0) / parentDetails.length) : 0;
+                    activityMap[act.id] = { progress: totalProg, parentTasks: parentDetails, allTasks: actTasks };
+                });
+                return activityMap;
+            }, [activities, tasks]);
+
+            if (!user) return <LoginPage username={username} setUsername={setUsername} password={password} setPassword={setPassword} handleLogin={handleLogin} loading={loading} error={error} />;
 
             return (
                 <div className="flex h-screen bg-slate-50 overflow-hidden">
-                    {/* 側邊欄 - 比例修正為固定寬度 */}
                     <div className="sidebar-fixed bg-impr-dark flex flex-col text-white shadow-2xl">
                         <div className="p-10 text-center border-b border-white/5 bg-slate-900/40">
                             <div className="bg-white p-2 rounded-2xl mb-4 inline-block shadow-lg">
@@ -283,58 +329,51 @@
                         </nav>
                         <div className="p-8">
                             <div className="mb-6 px-4">
-                                <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Logged in as</p>
+                                <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest leading-none mb-1">使用者</p>
                                 <p className="text-sm font-bold text-white truncate">{user.name}</p>
                             </div>
-                            <button onClick={() => setUser(null)} className="w-full py-3 bg-red-500/10 text-red-400 rounded-xl font-black text-[10px] uppercase border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">
-                                登出系統
-                            </button>
+                            <button onClick={() => setUser(null)} className="w-full py-3 bg-red-500/10 text-red-400 rounded-xl font-black text-[10px] uppercase border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">登出系統</button>
                         </div>
                     </div>
 
-                    {/* 主內容區 - 自動適應寬度 */}
                     <div className="content-area flex flex-col h-full bg-slate-50 overflow-hidden">
                         <header className="px-12 py-10 flex items-center justify-between z-10 border-b border-slate-200 bg-white">
                             <div>
-                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] mb-1">Navigation / Management</p>
-                                <h1 className="text-3xl font-black text-slate-800 tracking-tighter leading-none italic">
-                                    {user.role === 'admin' ? '管理者管考視窗' : '顧問同仁工作台'}
-                                </h1>
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] mb-1 leading-none">Management / Dashboard</p>
+                                <h1 className="text-3xl font-black text-slate-800 tracking-tighter leading-none italic">{user.role === 'admin' ? '管理者管考視窗' : '顧問同仁工作台'}</h1>
                             </div>
-                            <div className="flex items-center gap-4 px-6 py-3 bg-slate-50 rounded-2xl text-[12px] font-black text-slate-500 font-mono border border-slate-100">
+                            <div className="px-6 py-3 bg-slate-50 rounded-2xl text-[12px] font-black text-slate-500 font-mono border border-slate-100 flex items-center gap-3">
                                 <i data-lucide="clock" className="w-4 h-4 text-impr-orange"></i>
-                                {new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                                {new Date().toLocaleDateString('zh-TW')}
                             </div>
                         </header>
 
-                        <main className="flex-1 overflow-auto p-12">
+                        <main className="flex-1 overflow-auto p-12 no-scrollbar">
                             <div className="max-w-6xl mx-auto space-y-10">
-                                {/* 統計概要 */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                     <div className="bg-gradient-to-br from-impr-orange to-orange-600 p-10 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden group">
                                         <div className="relative z-10">
                                             <p className="text-[11px] font-black uppercase tracking-widest opacity-70">進行中專案</p>
                                             <h4 className="text-6xl font-black mt-3 tracking-tighter leading-none">{activities.length}</h4>
                                         </div>
-                                        <i data-lucide="target" className="absolute right-[-10px] bottom-[-10px] w-32 h-32 opacity-10 group-hover:scale-110 transition-transform"></i>
+                                        <i data-lucide="target" className="absolute right-[-10px] bottom-[-10px] w-32 h-32 opacity-10"></i>
                                     </div>
                                     <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200">
                                         <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none">延遲風險項目</p>
                                         <h4 className="text-6xl font-black mt-3 tracking-tighter text-rose-500 leading-none">0</h4>
                                     </div>
-                                    <div className="bg-slate-800 p-10 rounded-[2.5rem] shadow-2xl text-white group">
-                                        <p className="text-[11px] font-black uppercase tracking-widest opacity-70">年度合約總數</p>
+                                    <div className="bg-slate-800 p-10 rounded-[2.5rem] shadow-2xl text-white">
+                                        <p className="text-[11px] font-black uppercase tracking-widest opacity-70">專案總數量</p>
                                         <h4 className="text-6xl font-black mt-3 tracking-tighter leading-none">{activities.length}</h4>
                                     </div>
                                 </div>
 
-                                {/* 專案表格 */}
                                 <div className="bg-white rounded-[3rem] shadow-sm border border-slate-200 overflow-hidden">
                                     <div className="p-10 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50/20">
-                                        <h3 className="text-xl font-black text-slate-800 tracking-tight italic">顧問服務管考清單</h3>
+                                        <h3 className="text-xl font-black text-slate-800 tracking-tight italic">專案管考清單</h3>
                                         {user.role === 'admin' && (
-                                            <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 px-8 py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 shadow-2xl shadow-orange-600/20 transition-all active:scale-95 text-sm">
-                                                <i data-lucide="plus" className="w-5 h-5"></i> 啟動新合約
+                                            <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 px-8 py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 shadow-xl transition-all text-sm">
+                                                <i data-lucide="plus" className="w-5 h-5"></i> 新增專案
                                             </button>
                                         )}
                                     </div>
@@ -350,31 +389,28 @@
                                             </thead>
                                             <tbody className="divide-y divide-slate-50">
                                                 {activities.length === 0 ? (
-                                                    <tr><td colSpan="4" className="p-20 text-center text-slate-300 font-bold tracking-widest uppercase italic">{loading ? "正在從 Google Sheets 讀取資料..." : "尚無專案資料"}</td></tr>
+                                                    <tr><td colSpan="4" className="p-20 text-center text-slate-300 font-bold tracking-widest uppercase italic">{loading ? "同步中..." : "尚未有專案"}</td></tr>
                                                 ) : activities.map(act => (
                                                     <tr key={act.id} className="hover:bg-slate-50/50 transition-all group">
                                                         <td className="px-10 py-8">
-                                                            <div className="font-black text-slate-700 text-lg group-hover:text-impr-orange transition-colors tracking-tight">{act.name}</div>
-                                                            <div className="text-[10px] font-bold text-slate-300 mt-2 uppercase flex gap-3">
-                                                                <span>期限: {act.endDate}</span>
-                                                                <span>ID: {act.id}</span>
-                                                            </div>
+                                                            <div className="font-black text-slate-700 text-lg group-hover:text-impr-orange transition-colors">{act.name}</div>
+                                                            <div className="text-[10px] font-bold text-slate-300 mt-2 flex gap-3 italic"><span>期限: {act.endDate}</span></div>
                                                         </td>
                                                         <td className="px-8 py-8 text-center">
-                                                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black border uppercase tracking-widest ${act.status === '進行中' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-orange-50 text-impr-orange border-orange-100'}`}>
+                                                            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black border uppercase ${act.status === '進行中' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-orange-50 text-impr-orange border-orange-100'}`}>
                                                                 {act.status}
                                                             </span>
                                                         </td>
                                                         <td className="px-10 py-8">
                                                             <div className="flex items-center gap-5">
                                                                 <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                                                                    <div className="h-full bg-gradient-to-r from-orange-400 to-impr-orange transition-all duration-1000" style={{width: `${act.progress || 0}%`}}></div>
+                                                                    <div className="h-full bg-gradient-to-r from-orange-400 to-impr-orange transition-all duration-1000" style={{width: `${calculateProgress[act.id]?.progress || 0}%`}}></div>
                                                                 </div>
-                                                                <span className="text-xs font-black text-slate-500 font-mono w-8">{act.progress || 0}%</span>
+                                                                <span className="text-xs font-black text-slate-500 font-mono w-8">{calculateProgress[act.id]?.progress || 0}%</span>
                                                             </div>
                                                         </td>
                                                         <td className="px-10 py-8 text-right">
-                                                            <button className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 font-black text-[11px] uppercase hover:bg-slate-800 hover:text-white transition-all shadow-sm">Details</button>
+                                                            <button onClick={() => setSelectedActivityId(act.id)} className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 font-black text-[11px] uppercase hover:bg-slate-800 hover:text-white transition-all shadow-sm">Details</button>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -383,13 +419,11 @@
                                     </div>
                                 </div>
                             </div>
-                            <footer className="mt-24 py-12 border-t border-slate-100 text-center">
-                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em]">impr consultants © 2025 enterprise flagship edition</p>
-                            </footer>
                         </main>
                     </div>
 
                     <CreateActivityModal isOpen={isCreateOpen} loading={loading} onClose={() => setIsCreateOpen(false)} onCreate={handleCreate} />
+                    {selectedActivityId && <ActivityDetailModal activityId={selectedActivityId} onClose={() => setSelectedActivityId(null)} progressData={calculateProgress} updateTaskStatus={handleUpdateStatus} loading={loading} />}
                 </div>
             );
         };
