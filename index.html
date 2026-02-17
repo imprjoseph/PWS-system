@@ -31,7 +31,7 @@
         
         /* 強制限制 Logo 尺寸 */
         .company-logo {
-            max-width: 200px !important;
+            max-width: 220px !important;
             max-height: 80px !important;
             width: auto;
             height: auto;
@@ -88,7 +88,7 @@
                 <div className="w-full max-w-[400px] z-10">
                     <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 p-10 overflow-hidden">
                         <div className="text-center mb-8">
-                            {/* Logo 顯示區：移除多餘文字，只顯示圖片 */}
+                            {/* Logo 顯示區 */}
                             <div className="flex justify-center items-center h-20 mb-2">
                                 <img src={logoUrl} className="company-logo" onError={(e) => { e.target.src = 'https://via.placeholder.com/200x60?text=impr'; }} />
                             </div>
@@ -141,7 +141,7 @@
                         <div className="mt-8 flex gap-3">
                             <button onClick={onClose} className="flex-1 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200 transition-all">取消</button>
                             <button onClick={onCreate} disabled={loading} className="flex-1 py-3 bg-impr-orange text-white font-black rounded-xl shadow-lg hover:bg-orange-600 transition-all">
-                                {loading ? "生成任務範本中..." : "確認新增"}
+                                {loading ? "任務生成中(請稍候)..." : "確認新增"}
                             </button>
                         </div>
                     </div>
@@ -266,14 +266,14 @@
                 setLoading(true);
                 const res = await callGAS({ action: 'createActivity', ...form, manager: user.name });
                 if (res.status === 'success') { 
-                    // 延遲 1.5 秒再讀取，確保 GAS 已寫入任務
+                    // 修正：延長等待時間至 3 秒，確保 Google Sheets 完成寫入
                     setTimeout(async () => {
                         await fetchData(user); 
                         setIsCreateOpen(false); 
                         setForm({ name: '', clientName: '', startDate: '', endDate: '' });
-                    }, 1500);
+                    }, 3000);
                 }
-                setLoading(false);
+                // Loading 狀態會在 fetchData 完成後由 fetchData 設為 false
             };
 
             const progressData = useMemo(() => {
@@ -294,9 +294,9 @@
                 <div className="flex h-screen bg-slate-50 overflow-hidden">
                     <div className="sidebar-fixed bg-impr-dark flex flex-col text-white shadow-2xl">
                         <div className="p-10 text-center border-b border-white/5 bg-slate-900/40">
-                            {/* 側邊欄 Logo：移除文字，只保留圖片 */}
-                            <div className="bg-white p-2 rounded-2xl inline-block shadow-lg mb-4">
-                                <img src={logoUrl} className="h-10 w-auto" onError={(e) => { e.target.src = 'https://via.placeholder.com/100x40?text=impr'; }} />
+                            {/* 側邊欄 Logo：移除所有背景與容器，直接顯示圖片 */}
+                            <div className="mb-4 flex justify-center">
+                                <img src={logoUrl} className="h-10 w-auto object-contain" onError={(e) => { e.target.src = 'https://via.placeholder.com/100x40?text=impr'; }} />
                             </div>
                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-2">Enterprise Hub</p>
                         </div>
