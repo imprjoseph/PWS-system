@@ -3,18 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>impr 專案管考系統 - 企業旗艦版</title>
-    <!-- 載入 React 與 Babel (用於解析 JSX) -->
+    <title>impr 專案管考系統 - 企業連結版</title>
+    <!-- 載入核心庫 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- 載入 Tailwind CSS (CDN 版) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 載入 Lucide 圖示庫 -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <script>
-        // Tailwind 顏色配置
         tailwind.config = {
             theme: {
                 extend: {
@@ -23,10 +20,6 @@
                             orange: '#F28C00',
                             dark: '#0f172a',
                         }
-                    },
-                    borderRadius: {
-                        '3xl': '1.5rem',
-                        '4xl': '2rem',
                     }
                 }
             }
@@ -34,10 +27,34 @@
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        /* 隱藏捲軸但保持功能 */
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; margin: 0; padding: 0; }
+        
+        /* 強制限制 Logo 尺寸，避免變形 */
+        .company-logo {
+            max-width: 260px !important;
+            max-height: 100px !important;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            margin: 0 auto;
+        }
+
+        /* 針對比例問題的佈局優化 */
+        .sidebar-fixed {
+            width: 250px;
+            flex-shrink: 0;
+        }
+
+        .content-area {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* 輸入框焦點強化 */
+        input:focus {
+            border-color: #F28C00 !important;
+            box-shadow: 0 0 0 3px rgba(242, 140, 0, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -47,16 +64,15 @@
         const { useState, useEffect, useMemo, useCallback } = React;
 
         // ==========================================
-        // --- 設定區 ---
+        // --- 連線設定區 ---
         // ==========================================
-        // 1. 正式連結時請改為 false
-        const USE_MOCK_DATA = false; 
-        // 2. 貼上您在 Google Apps Script 部署後的 Web App URL
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzeurryJ4gtk2EHdcDTbeGDbTXO7exOmh1qUZ_tlcp8VD6FfPdnMV9G_xPMG2881DjQ/exec";     
+        const USE_MOCK_DATA = false; // 已切換為正式連線模式
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzeurryJ4gtk2EHdcDTbeGDbTXO7exOmh1qUZ_tlcp8VD6FfPdnMV9G_xPMG2881DjQ/exec";
         const logoUrl = "logo.png";
 
-        // --- 核心連線函式 (含重試機制) ---
-        const callGAS = async (payload, retries = 5, delay = 1000) => {
+        // --- 核心網路連線功能 (帶有重試機制) ---
+        const callGAS = async (payload, retries = 3) => {
+            if (USE_MOCK_DATA) return null;
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(GAS_API_URL, {
@@ -66,53 +82,67 @@
                     return await response.json();
                 } catch (err) {
                     if (i === retries - 1) throw err;
-                    await new Promise(res => setTimeout(res, delay));
-                    delay *= 2; // 指數退避
+                    await new Promise(res => setTimeout(res, 1000));
                 }
             }
         };
 
-        // --- 輔助功能 ---
-        const isDelayed = (task) => {
-            if (!task.dueDate || Number(task.status) === 100) return false;
-            return new Date() > new Date(task.dueDate);
-        };
-
         // ==========================================
-        // 子組件
+        // 1. 子組件 (定義在 App 外，徹底解決打字跳開問題)
         // ==========================================
 
+        // --- 登入畫面 ---
         const LoginPage = ({ username, setUsername, password, setPassword, handleLogin, loading, error }) => (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 relative p-6">
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute -top-24 -right-24 w-96 h-96 bg-orange-100 rounded-full blur-[100px] opacity-60"></div>
-                    <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-100 rounded-full blur-[100px] opacity-60"></div>
-                </div>
-                <div className="w-full max-w-[380px] z-10">
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl border border-white overflow-hidden">
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 relative">
+                {/* 背景裝飾比例修正 */}
+                <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-orange-50 rounded-full blur-[120px] opacity-60"></div>
+                <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-blue-50 rounded-full blur-[120px] opacity-60"></div>
+
+                <div className="w-full max-w-[400px] z-10">
+                    <div className="bg-white rounded-[2.5rem] shadow-[0_25px_50px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden">
                         <div className="p-10 pb-6 text-center">
-                            <div className="flex justify-center mb-6">
-                                <img src={logoUrl} className="h-14 w-auto" onError={(e) => e.target.src = 'https://via.placeholder.com/100?text=impr'} />
+                            <div className="flex justify-center mb-8 min-h-[80px] items-center">
+                                <img 
+                                    src={logoUrl} 
+                                    className="company-logo" 
+                                    alt="impr Logo"
+                                    onError={(e) => { e.target.src = 'https://via.placeholder.com/200x80?text=impr+Consultants'; }} 
+                                />
                             </div>
-                            <h2 className="text-xl font-black text-slate-800 tracking-tight">專案管考自動化系統</h2>
-                            <p className="text-slate-400 font-bold text-[9px] mt-2 uppercase tracking-[0.2em]">Strategic PR Management</p>
+                            <h2 className="text-2xl font-black text-slate-800 tracking-tight">專案管考自動化系統</h2>
+                            <p className="text-slate-400 font-bold text-[10px] mt-1 uppercase tracking-[0.2em]">Strategic PR Management</p>
                         </div>
-                        <form onSubmit={handleLogin} className="p-10 pt-0 space-y-4">
+
+                        <form onSubmit={handleLogin} className="p-10 pt-0 space-y-5">
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Account</label>
-                                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-impr-orange focus:bg-white outline-none font-bold text-slate-700 transition-all"
-                                    placeholder="admin / staff" />
+                                <input 
+                                    type="text" 
+                                    value={username} 
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-700 transition-all"
+                                    placeholder="帳號 (admin / staff)" 
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
-                                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-impr-orange focus:bg-white outline-none font-bold text-slate-700 transition-all"
-                                    placeholder="密碼" />
+                                <input 
+                                    type="password" 
+                                    value={password} 
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-700 transition-all"
+                                    placeholder="密碼" 
+                                />
                             </div>
-                            {error && <div className="text-[11px] text-red-500 font-bold px-2">{error}</div>}
-                            <button type="submit" disabled={loading} className="w-full py-4 bg-impr-orange text-white rounded-2xl font-black text-lg shadow-xl shadow-orange-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:bg-slate-300 mt-2">
-                                {loading ? "連線中..." : "進入系統"}
+                            
+                            {error && <div className="text-[11px] text-red-500 font-bold bg-red-50 p-3 rounded-lg border border-red-100">{error}</div>}
+                            
+                            <button 
+                                type="submit" 
+                                disabled={loading} 
+                                className="w-full py-4 bg-impr-orange text-white rounded-xl font-black text-lg shadow-xl shadow-orange-600/20 hover:bg-orange-600 transition-all active:scale-[0.98] disabled:bg-slate-300 mt-2"
+                            >
+                                {loading ? "連線驗證中..." : "登入系統"}
                             </button>
                         </form>
                     </div>
@@ -120,27 +150,37 @@
             </div>
         );
 
+        // --- 新增專案 Modal ---
         const CreateActivityModal = ({ isOpen, onClose, onCreate, loading }) => {
             const [data, setData] = useState({ name: '', startDate: '', endDate: '' });
             if (!isOpen) return null;
             return (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 border border-white">
-                        <h3 className="text-xl font-black text-slate-800 mb-6">啟動新顧問合約</h3>
+                        <h3 className="text-xl font-black text-slate-800 mb-6 italic tracking-tight">啟動新顧問合約</h3>
                         <div className="space-y-4">
-                            <input type="text" placeholder="合約/活動名稱" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-impr-orange font-bold"
-                                   onChange={(e) => setData({...data, name: e.target.value})} />
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">合約/專案名稱</label>
+                                <input type="text" placeholder="例如：2025 全球電子展" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold"
+                                       onChange={(e) => setData({...data, name: e.target.value})} />
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm"
-                                       onChange={(e) => setData({...data, startDate: e.target.value})} />
-                                <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm"
-                                       onChange={(e) => setData({...data, endDate: e.target.value})} />
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">開始日</label>
+                                    <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm"
+                                           onChange={(e) => setData({...data, startDate: e.target.value})} />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">結束日</label>
+                                    <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm"
+                                           onChange={(e) => setData({...data, endDate: e.target.value})} />
+                                </div>
                             </div>
                         </div>
                         <div className="mt-8 flex gap-3">
-                            <button onClick={onClose} className="flex-1 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl">取消</button>
-                            <button onClick={() => onCreate(data)} disabled={loading} className="flex-1 py-3 bg-impr-orange text-white font-black rounded-xl shadow-lg disabled:opacity-50">
-                                {loading ? "處理中..." : "建立專案"}
+                            <button onClick={onClose} className="flex-1 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200">取消</button>
+                            <button onClick={() => onCreate(data)} disabled={loading} className="flex-1 py-3 bg-impr-orange text-white font-black rounded-xl shadow-lg hover:bg-orange-600">
+                                {loading ? "寫入中..." : "建立專案"}
                             </button>
                         </div>
                     </div>
@@ -149,7 +189,7 @@
         };
 
         // ==========================================
-        // 主程式 App
+        // 2. 主程式 App
         // ==========================================
 
         const App = () => {
@@ -162,173 +202,180 @@
             const [error, setError] = useState('');
             const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [user, activities]);
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            });
 
-            // 抓取資料
+            // --- 抓取 Google Sheet 資料 ---
             const fetchData = useCallback(async (currentUser) => {
-                if (USE_MOCK_DATA) {
-                    setActivities([{ id: 'A01', name: '2025 全球電子展公關專案', status: '進行中', manager: '專案總監', progress: 50 }]);
-                    return;
-                }
+                setLoading(true);
                 try {
                     const res = await callGAS({ action: 'getData', role: currentUser.role, name: currentUser.name });
-                    if (res.status === 'success') {
-                        setActivities(res.activities);
-                        setTasks(res.tasks);
+                    if (res && res.status === 'success') {
+                        setActivities(res.activities || []);
+                        setTasks(res.tasks || []);
                     }
                 } catch (err) {
                     console.error("Fetch Data Error:", err);
                 }
+                setLoading(false);
             }, []);
 
-            // 登入處理
+            // --- 處理登入 ---
             const handleLogin = async (e) => {
                 e.preventDefault();
                 setLoading(true);
                 setError('');
-
-                if (USE_MOCK_DATA) {
-                    setTimeout(() => {
-                        if (username === 'admin' && password === '123') {
-                            const u = { name: '專案總監', role: 'admin', username: 'admin' };
-                            setUser(u);
-                            fetchData(u);
-                        } else {
-                            setError('帳號或密碼錯誤 (Demo: admin/123)');
-                        }
-                        setLoading(false);
-                    }, 800);
-                    return;
-                }
-
                 try {
                     const res = await callGAS({ action: 'login', username, password });
-                    if (res.status === 'success') {
+                    if (res && res.status === 'success') {
                         setUser(res.user);
-                        fetchData(res.user);
+                        await fetchData(res.user);
                     } else {
-                        setError(res.message);
+                        setError(res ? res.message : '連線失敗，請檢查網址');
                     }
                 } catch (err) {
-                    setError('無法連線至後端資料庫，請檢查 GAS 網址');
+                    setError('Google Sheets 連線錯誤');
                 }
                 setLoading(false);
             };
 
-            // 建立專案處理
+            // --- 處理建立新專案 ---
             const handleCreate = async (data) => {
                 if (!data.name) return;
                 setLoading(true);
-                if (USE_MOCK_DATA) {
-                    setActivities([...activities, { ...data, id: Date.now(), status: '洽談中', manager: user.name, progress: 0 }]);
-                    setIsCreateOpen(false);
-                } else {
-                    try {
-                        const res = await callGAS({ 
-                            action: 'createActivity', 
-                            name: data.name, 
-                            startDate: data.startDate, 
-                            endDate: data.endDate, 
-                            manager: user.name 
-                        });
-                        if (res.status === 'success') {
-                            await fetchData(user);
-                            setIsCreateOpen(false);
-                        }
-                    } catch (err) {
-                        alert('建立失敗，請稍後再試');
+                try {
+                    const res = await callGAS({ action: 'createActivity', ...data, manager: user.name });
+                    if (res && res.status === 'success') {
+                        await fetchData(user);
+                        setIsCreateOpen(false);
                     }
+                } catch (err) {
+                    alert('建立失敗');
                 }
                 setLoading(false);
             };
 
-            if (!user) return <LoginPage username={username} setUsername={setUsername} password={password} setPassword={setPassword} handleLogin={handleLogin} loading={loading} error={error} />;
+            if (!user) return (
+                <LoginPage 
+                    username={username} setUsername={setUsername} 
+                    password={password} setPassword={setPassword} 
+                    handleLogin={handleLogin} loading={loading} error={error} 
+                />
+            );
 
             return (
-                <div className="flex h-screen bg-slate-100 overflow-hidden">
-                    {/* 側邊欄 */}
-                    <div className="w-64 bg-impr-dark flex flex-col text-white shadow-2xl shrink-0">
-                        <div className="p-8 text-center border-b border-white/5 bg-slate-900/50">
-                            <img src={logoUrl} className="h-10 mx-auto mb-4" onError={(e) => e.target.style.display='none'} />
-                            <div className="text-xl font-black tracking-tighter text-impr-orange">impr</div>
-                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Enterprise Management</p>
+                <div className="flex h-screen bg-slate-50 overflow-hidden">
+                    {/* 側邊欄 - 比例修正為固定寬度 */}
+                    <div className="sidebar-fixed bg-impr-dark flex flex-col text-white shadow-2xl">
+                        <div className="p-10 text-center border-b border-white/5 bg-slate-900/40">
+                            <div className="bg-white p-2 rounded-2xl mb-4 inline-block shadow-lg">
+                                <img src={logoUrl} className="h-10 w-auto" alt="Logo" onError={(e) => e.target.style.display='none'} />
+                            </div>
+                            <div className="text-xl font-black tracking-tighter text-impr-orange leading-none">impr</div>
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mt-2">Enterprise Platform</p>
                         </div>
-                        <nav className="flex-1 p-4 space-y-2 mt-4">
-                            <div className="bg-impr-orange p-4 rounded-2xl font-bold flex items-center gap-3 shadow-lg cursor-pointer">
+                        <nav className="flex-1 p-6 space-y-3 mt-6">
+                            <div className="bg-impr-orange p-5 rounded-2xl font-bold flex items-center gap-3 shadow-xl shadow-orange-600/20">
+                                <i data-lucide="layout-dashboard" className="w-5 h-5"></i>
                                 <span className="text-sm">總覽儀表板</span>
                             </div>
                         </nav>
-                        <div className="p-6 mt-auto">
-                            <button onClick={() => setUser(null)} className="w-full py-3 bg-red-500/10 text-red-400 rounded-xl font-black text-[10px] uppercase tracking-widest border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">
+                        <div className="p-8">
+                            <div className="mb-6 px-4">
+                                <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Logged in as</p>
+                                <p className="text-sm font-bold text-white truncate">{user.name}</p>
+                            </div>
+                            <button onClick={() => setUser(null)} className="w-full py-3 bg-red-500/10 text-red-400 rounded-xl font-black text-[10px] uppercase border border-red-500/20 hover:bg-red-500 hover:text-white transition-all">
                                 登出系統
                             </button>
                         </div>
                     </div>
 
-                    {/* 主內容區 */}
-                    <div className="flex-1 flex flex-col h-full min-w-0 bg-slate-50 overflow-hidden">
-                        <header className="px-10 py-10 flex items-center justify-between z-10">
+                    {/* 主內容區 - 自動適應寬度 */}
+                    <div className="content-area flex flex-col h-full bg-slate-50 overflow-hidden">
+                        <header className="px-12 py-10 flex items-center justify-between z-10 border-b border-slate-200 bg-white">
                             <div>
-                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] mb-1">Navigation / Dashboard</p>
-                                <h1 className="text-3xl font-black text-slate-800 tracking-tighter leading-none italic">管理者管考視窗</h1>
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] mb-1">Navigation / Management</p>
+                                <h1 className="text-3xl font-black text-slate-800 tracking-tighter leading-none italic">
+                                    {user.role === 'admin' ? '管理者管考視窗' : '顧問同仁工作台'}
+                                </h1>
                             </div>
-                            <div className="px-5 py-2.5 bg-white shadow-sm border border-slate-200 rounded-2xl text-[12px] font-black text-slate-500 font-mono">
-                                {new Date().toLocaleDateString('zh-TW')}
+                            <div className="flex items-center gap-4 px-6 py-3 bg-slate-50 rounded-2xl text-[12px] font-black text-slate-500 font-mono border border-slate-100">
+                                <i data-lucide="clock" className="w-4 h-4 text-impr-orange"></i>
+                                {new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                             </div>
                         </header>
 
-                        <main className="flex-1 overflow-auto px-10 pb-16">
-                            <div className="max-w-5xl mx-auto space-y-8">
-                                {/* 統計卡片 */}
-                                <div className="grid grid-cols-3 gap-6">
-                                    <div className="bg-gradient-to-br from-impr-orange to-orange-600 p-8 rounded-[2.5rem] shadow-xl text-white">
-                                        <p className="text-[10px] font-black uppercase opacity-70">進行中專案</p>
-                                        <h4 className="text-5xl font-black mt-2 tracking-tighter">{activities.length}</h4>
+                        <main className="flex-1 overflow-auto p-12">
+                            <div className="max-w-6xl mx-auto space-y-10">
+                                {/* 統計概要 */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    <div className="bg-gradient-to-br from-impr-orange to-orange-600 p-10 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden group">
+                                        <div className="relative z-10">
+                                            <p className="text-[11px] font-black uppercase tracking-widest opacity-70">進行中專案</p>
+                                            <h4 className="text-6xl font-black mt-3 tracking-tighter leading-none">{activities.length}</h4>
+                                        </div>
+                                        <i data-lucide="target" className="absolute right-[-10px] bottom-[-10px] w-32 h-32 opacity-10 group-hover:scale-110 transition-transform"></i>
                                     </div>
-                                    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase">延遲風險</p>
-                                        <h4 className="text-5xl font-black mt-2 tracking-tighter text-rose-500">0</h4>
+                                    <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200">
+                                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none">延遲風險項目</p>
+                                        <h4 className="text-6xl font-black mt-3 tracking-tighter text-rose-500 leading-none">0</h4>
                                     </div>
-                                    <div className="bg-slate-800 p-8 rounded-[2.5rem] shadow-xl text-white">
-                                        <p className="text-[10px] font-black uppercase opacity-70">年度總件數</p>
-                                        <h4 className="text-5xl font-black mt-2 tracking-tighter">{activities.length}</h4>
+                                    <div className="bg-slate-800 p-10 rounded-[2.5rem] shadow-2xl text-white group">
+                                        <p className="text-[11px] font-black uppercase tracking-widest opacity-70">年度合約總數</p>
+                                        <h4 className="text-6xl font-black mt-3 tracking-tighter leading-none">{activities.length}</h4>
                                     </div>
                                 </div>
 
-                                {/* 清單表格 */}
-                                <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-                                    <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/10">
-                                        <h3 className="text-lg font-black text-slate-800">顧問專案進度清單</h3>
-                                        <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 px-6 py-3 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 shadow-lg shadow-orange-600/20 transition-all active:scale-95 text-sm">
-                                            + 啟動新合約
-                                        </button>
+                                {/* 專案表格 */}
+                                <div className="bg-white rounded-[3rem] shadow-sm border border-slate-200 overflow-hidden">
+                                    <div className="p-10 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50/20">
+                                        <h3 className="text-xl font-black text-slate-800 tracking-tight italic">顧問服務管考清單</h3>
+                                        {user.role === 'admin' && (
+                                            <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 px-8 py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 shadow-2xl shadow-orange-600/20 transition-all active:scale-95 text-sm">
+                                                <i data-lucide="plus" className="w-5 h-5"></i> 啟動新合約
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left">
                                             <thead>
-                                                <tr className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 border-b border-slate-50">
-                                                    <th className="px-8 py-4">活動名稱</th>
-                                                    <th className="px-8 py-4 text-center">狀態</th>
-                                                    <th className="px-8 py-4">進度</th>
-                                                    <th className="px-8 py-4 text-right">操作</th>
+                                                <tr className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-300 border-b border-slate-50 bg-slate-50/50">
+                                                    <th className="px-10 py-5">專案活動名稱</th>
+                                                    <th className="px-8 py-5 text-center">狀態</th>
+                                                    <th className="px-10 py-5">管考進度</th>
+                                                    <th className="px-10 py-5 text-right">操作</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-50">
                                                 {activities.length === 0 ? (
-                                                    <tr><td colSpan="4" className="p-12 text-center text-slate-300 font-bold">載入中或尚無資料...</td></tr>
+                                                    <tr><td colSpan="4" className="p-20 text-center text-slate-300 font-bold tracking-widest uppercase italic">{loading ? "正在從 Google Sheets 讀取資料..." : "尚無專案資料"}</td></tr>
                                                 ) : activities.map(act => (
-                                                    <tr key={act.id} className="hover:bg-slate-50 transition-all">
-                                                        <td className="px-8 py-6 font-black text-slate-700">{act.name}</td>
-                                                        <td className="px-8 py-6 text-center"><span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black border border-blue-100">{act.status}</span></td>
-                                                        <td className="px-8 py-6">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                                    <div className="h-full bg-impr-orange" style={{width: `${act.progress || 0}%`}}></div>
-                                                                </div>
-                                                                <span className="text-[10px] font-black text-slate-500 font-mono">{act.progress || 0}%</span>
+                                                    <tr key={act.id} className="hover:bg-slate-50/50 transition-all group">
+                                                        <td className="px-10 py-8">
+                                                            <div className="font-black text-slate-700 text-lg group-hover:text-impr-orange transition-colors tracking-tight">{act.name}</div>
+                                                            <div className="text-[10px] font-bold text-slate-300 mt-2 uppercase flex gap-3">
+                                                                <span>期限: {act.endDate}</span>
+                                                                <span>ID: {act.id}</span>
                                                             </div>
                                                         </td>
-                                                        <td className="px-8 py-6 text-right"><button className="text-[10px] font-black text-slate-400 uppercase hover:text-impr-orange">Details</button></td>
+                                                        <td className="px-8 py-8 text-center">
+                                                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black border uppercase tracking-widest ${act.status === '進行中' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-orange-50 text-impr-orange border-orange-100'}`}>
+                                                                {act.status}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-10 py-8">
+                                                            <div className="flex items-center gap-5">
+                                                                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                                                    <div className="h-full bg-gradient-to-r from-orange-400 to-impr-orange transition-all duration-1000" style={{width: `${act.progress || 0}%`}}></div>
+                                                                </div>
+                                                                <span className="text-xs font-black text-slate-500 font-mono w-8">{act.progress || 0}%</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-10 py-8 text-right">
+                                                            <button className="px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 font-black text-[11px] uppercase hover:bg-slate-800 hover:text-white transition-all shadow-sm">Details</button>
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -336,6 +383,9 @@
                                     </div>
                                 </div>
                             </div>
+                            <footer className="mt-24 py-12 border-t border-slate-100 text-center">
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em]">impr consultants © 2025 enterprise flagship edition</p>
+                            </footer>
                         </main>
                     </div>
 
