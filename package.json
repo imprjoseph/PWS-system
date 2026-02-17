@@ -1,19 +1,17 @@
 {
-  "homepage": "[https://imprjoseph.github.io/PWS-system](https://imprjoseph.github.io/PWS-system)",
-  "name": "project-tracker",
-  "name": "project-tracker",
+  "homepage": "https://imprjoseph.github.io/PWS-system",
   "name": "project-tracker",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "lint": "eslint .",
-  "preview": "vite preview",
-  "predeploy": "npm run build",
-  "deploy": "gh-pages -d dist"
-},
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
+  },
   "dependencies": {
     "lucide-react": "^0.564.0",
     "react": "^19.2.0",
