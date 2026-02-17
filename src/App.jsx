@@ -6,11 +6,14 @@ import {
 } from 'lucide-react';
 
 // --- 設定區 ---
-// 部署時請改為 false 並填入你的 Google Apps Script 網址
-const USE_MOCK_DATA = false; 
-const GAS_API_URL = "https://docs.google.com/spreadsheets/d/1avSAEzLmrJPnEA5hU01IoN5enqWqfF_hFBPEoFaaOR8/edit?gid=1321463893#gid=1321463893"; 
+// 部署提醒：
+// 1. 若要使用 Google Sheets 真實資料，請將 USE_MOCK_DATA 改為 false
+// 2. 請在 GAS_API_URL 填入您部署好的 Google Apps Script 網頁應用程式網址
+const USE_MOCK_DATA = true; 
+const GAS_API_URL = ""; 
 
 // --- 模擬資料 (Mock Data) ---
+// 這是當 USE_MOCK_DATA = true 時會顯示的測試資料
 const mockDB = {
   users: [
     { username: 'admin', password: '123', role: 'admin', name: '專案經理' },
@@ -61,6 +64,7 @@ const App = () => {
     setError('');
 
     if (USE_MOCK_DATA) {
+      // 模擬 API 延遲
       setTimeout(() => {
         const found = mockDB.users.find(u => u.username === username && u.password === password);
         if (found) {
@@ -72,7 +76,12 @@ const App = () => {
         }
       }, 800);
     } else {
-      // Real API Call
+      // 真實 API 呼叫
+      if (!GAS_API_URL) {
+        setError("尚未設定 GAS_API_URL");
+        setLoading(false);
+        return;
+      }
       try {
         const response = await fetch(GAS_API_URL, {
             method: 'POST',
@@ -87,7 +96,8 @@ const App = () => {
             setLoading(false);
         }
       } catch (err) {
-        setError('連線錯誤');
+        console.error(err);
+        setError('連線錯誤，請檢查網路或 GAS 網址');
         setLoading(false);
       }
     }
@@ -104,11 +114,20 @@ const App = () => {
       setTasks(filteredTasks);
       setLoading(false);
     } else {
-      // Real API implementation would go here
-      // const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'getData', role: currentUser.role, name: currentUser.name }) });
-      // const data = await response.json();
-      // setActivities(data.activities);
-      // setTasks(data.tasks);
+      // Real API implementation
+       try {
+        const response = await fetch(GAS_API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'getData', role: currentUser.role, name: currentUser.name }) 
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+          setActivities(data.activities);
+          setTasks(data.tasks);
+        }
+      } catch (err) {
+        console.error("Fetch data error:", err);
+      }
       setLoading(false);
     }
   };
@@ -149,14 +168,40 @@ const App = () => {
 
     setActivities([...activities, activityObj]);
     setTasks([...tasks, ...newGeneratedTasks]);
-    // 實際應用需呼叫後端 API: createActivity
+    
+    // 若為真實環境，需呼叫後端 API: createActivity
+    if (!USE_MOCK_DATA) {
+        fetch(GAS_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'createActivity',
+                name: newActivity.name,
+                startDate: newActivity.startDate,
+                endDate: newActivity.endDate,
+                manager: user.name
+            })
+        });
+    }
   };
 
   const updateTaskStatus = (taskId, newStatus) => {
     setTasks(prev => prev.map(t => 
       t.id === taskId ? { ...t, status: newStatus } : t
     ));
-    // In real app, send API request here: updateTask
+    
+    // 若為真實環境，發送 API 請求
+    if (!USE_MOCK_DATA) {
+        // 這裡需要找到該 task 的 rowIndex (在真實資料中會有)
+        // 簡單範例僅傳送 id
+        fetch(GAS_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'updateTask',
+                taskId: taskId,
+                status: newStatus
+            })
+        });
+    }
   };
 
   // --- 計算邏輯 (核心需求) ---
@@ -256,7 +301,7 @@ const App = () => {
           </button>
         </form>
         <div className="mt-4 text-xs text-center text-gray-400">
-           Demo: admin/123 or staff/123
+           {USE_MOCK_DATA && "測試帳號: admin/123 或 staff/123"}
         </div>
       </div>
     </div>
