@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v5.2</title>
+    <title>IMPR 專案管考系統 - 企業版 v5.3</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -18,7 +18,8 @@
                             orange: '#F28C00', 
                             dark: '#0f172a', 
                             slate: '#1e293b',
-                            danger: '#ef4444'
+                            danger: '#ef4444',
+                            warning: '#f59e0b'
                         }
                     },
                     screens: {
@@ -49,13 +50,18 @@
         details[open] > summary { border-bottom: 1px solid #f1f5f9; }
         
         input[type=range] { -webkit-appearance: none; background: transparent; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #F28C00; margin-top: -7px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: 2px solid white; transition: transform 0.1s; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #F28C00; margin-top: -7px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: 2px solid white; transition: transform 0.1s; cursor: pointer; }
         input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #e2e8f0; border-radius: 2px; }
+        
+        /* 鎖定狀態的 Range 樣式 */
+        input[type=range]:disabled::-webkit-slider-thumb { background: #cbd5e1; cursor: not-allowed; }
+        input[type=range]:disabled::-webkit-slider-runnable-track { cursor: not-allowed; }
 
         .editable-field { transition: all 0.2s; }
-        .editable-field:hover { background-color: #fff; border-color: #e2e8f0; }
+        .editable-field:hover:not(:disabled) { background-color: #fff; border-color: #e2e8f0; }
         .editable-field:focus { background-color: white; border-color: #F28C00; box-shadow: 0 0 0 3px rgba(242, 140, 0, 0.1); }
+        .editable-field:disabled { background-color: #f8fafc; color: #94a3b8; cursor: not-allowed; border-color: transparent; }
     </style>
 </head>
 <body>
@@ -66,8 +72,7 @@
         
         const logoUrl = "logo.png";
         
-        // --- 範本設定 (依據上傳的 PWS (1).xlsx 內容) ---
-        
+        // --- 範本設定 (完全對照 PWS (1).xlsx) ---
         // SURVEY_TEMPLATE.csv
         const SURVEY_TEMPLATE = [
             { code: '1', name: '基本場地條件' },
@@ -175,7 +180,7 @@
             { code: '3.6', name: '出席名單最終版' },
             { code: '4', name: 'AV 技術整合' },
             { code: '4.1', name: '燈光配置（舞台／觀眾區）' },
-            { code: '4.2', name: '音響系統（麥克風數量、備品）' },
+            { code: '4.2', name: '音響系統確認' },
             { code: '4.3', name: '投影／LED 規劃' },
             { code: '4.4', name: '講者簡報測試' },
             { code: '4.5', name: '直播／錄影（若有）' },
@@ -229,7 +234,7 @@
             { code: '10.4', name: '客戶回饋整理' },
             { code: '10.5', name: '內部復盤會議' },
             { code: '10.6', name: '文件歸檔' },
-            { code: '11', name: '論文海報區規劃' },
+            { code: '11', name: '學術與展示' },
             { code: '11.1', name: '海報數量與尺寸規範' },
             { code: '11.2', name: '訂定海報展示形式（背板／海報架／牆面）' },
             { code: '11.3', name: '展示區動線與區位規劃' },
@@ -261,6 +266,7 @@
 
         const callGAS = async (payload) => { console.log("模擬 API:", payload); return { status: 'success' }; };
 
+        // --- 元件: 登入頁 (Update with new accounts) ---
         const LoginPage = ({ onLogin, loading, error }) => {
             const [u, setU] = useState('joseph');
             const [p, setP] = useState('');
@@ -273,7 +279,7 @@
                         </div>
                         <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-8 tracking-tight italic">專案進度管考系統</h2>
                         <div className="space-y-3">
-                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="帳號 (joseph)" />
+                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="帳號" />
                             <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="密碼" />
                         </div>
                         {error && <div className="text-red-500 text-xs font-bold mt-4">{error}</div>}
@@ -297,22 +303,21 @@
         };
 
         const TeamManager = () => {
-            // 依據 LIST.csv 預設載入資料 (joseph, Arlena)
             const [members, setMembers] = useState([
-                { id: 1, name: 'joseph', role: 'admin', email: '', phone: '' },
-                { id: 2, name: 'Arlena', role: 'staff', email: '', phone: '' }
+                { id: 1, name: 'joseph', role: 'admin', email: 'joseph@impr.com', phone: '' },
+                { id: 2, name: 'Arlena', role: 'staff', email: 'arlena@impr.com', phone: '' }
             ]);
             const [isEditing, setIsEditing] = useState(false);
             const [editId, setEditId] = useState(null);
             const [formData, setFormData] = useState({ name: '', role: '', email: '', phone: '' });
 
             useEffect(() => {
-                const cached = localStorage.getItem('impr_team_v5.2'); 
+                const cached = localStorage.getItem('impr_team_v5.3');
                 if (cached) setMembers(JSON.parse(cached));
             }, []);
 
             useEffect(() => {
-                localStorage.setItem('impr_team_v5.2', JSON.stringify(members));
+                localStorage.setItem('impr_team_v5.3', JSON.stringify(members));
             }, [members]);
 
             const handleSubmit = () => {
@@ -383,7 +388,7 @@
             );
         };
 
-        const TaskHierarchy = ({ tasks, onUpdate }) => {
+        const TaskHierarchy = ({ tasks, user, onUpdate }) => {
             const { parents, childrenMap } = useMemo(() => {
                 const parents = [];
                 const childrenMap = {};
@@ -408,7 +413,7 @@
 
             if (parents.length === 0) return <div className="p-8 text-center text-slate-300 italic text-sm">暫無任務</div>;
 
-            // 檢查任務是否延遲 (未完成且過期)
+            // 檢查任務延遲
             const checkDelay = (task) => {
                 if (task.status < 100 && task.dueDate) {
                     const due = new Date(task.dueDate);
@@ -419,6 +424,13 @@
                 return false;
             };
 
+            // 檢查權限：Admin 或 本人可編輯
+            const checkPermission = (assigneeName) => {
+                if (user.role === 'admin') return true;
+                // 注意：這裡假設 Task 中的 assignee 為 user.name
+                return user.name === assigneeName;
+            };
+
             return (
                 <div className="space-y-4">
                     {parents.map(parent => {
@@ -426,6 +438,7 @@
                         const activeChildren = children.filter(c => c.isApplicable);
                         const progress = activeChildren.length > 0 ? Math.round(activeChildren.reduce((acc, curr) => acc + (Number(curr.status)||0), 0) / activeChildren.length) : (Number(parent.status) || 0);
                         const isParentDelayed = checkDelay(parent);
+                        const canEditParent = checkPermission(parent.assignee);
                         
                         return (
                             <details key={parent.id} className={`group bg-white border rounded-2xl overflow-hidden shadow-sm ${isParentDelayed ? 'border-impr-danger/50' : 'border-slate-200'}`} open>
@@ -433,33 +446,35 @@
                                     <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
                                         <span className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-slate-800 text-white text-[10px] sm:text-xs font-mono font-bold rounded-lg shadow-sm">{parent.code}</span>
                                         <span className="font-black text-slate-700 text-sm tracking-tight truncate">{parent.name}</span>
-                                        {isParentDelayed && <span className="text-[10px] font-bold text-white bg-impr-danger px-2 py-0.5 rounded-full">已延遲</span>}
+                                        {isParentDelayed && <span className="text-[10px] font-bold text-white bg-impr-danger px-2 py-0.5 rounded-full flex items-center gap-1"><i data-lucide="alert-circle" className="w-3 h-3"></i> 延遲</span>}
+                                        {!canEditParent && <span className="text-[10px] text-slate-400 border border-slate-200 px-1.5 rounded ml-2">唯讀</span>}
                                     </div>
                                     <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0"><div className="flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-white rounded-lg border border-slate-200"><div className="w-10 sm:w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-impr-orange" style={{width: `${progress}%`}}></div></div><span className="text-xs font-black text-impr-orange">{progress}%</span></div><i data-lucide="chevron-down" className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-open:rotate-180 transition-transform"></i></div>
                                 </summary>
                                 <div className="p-3 sm:p-4 space-y-3 bg-white">
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                                            <div className="md:col-span-2 relative"><i data-lucide="user" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.assignee} onBlur={(e) => onUpdate(parent.id, { assignee: e.target.value })} className="editable-field w-full bg-white pl-9 pr-2 py-2.5 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 outline-none" placeholder="總負責人" /></div>
-                                            <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className={`editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold border border-slate-200 outline-none ${isParentDelayed ? 'text-impr-danger' : 'text-slate-500'}`} /></div>
-                                            <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200"><input type="range" min="0" max="100" step="10" defaultValue={parent.status} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" disabled={children.length > 0} /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span></div>
-                                            <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.note} onBlur={(e) => onUpdate(parent.id, { note: e.target.value })} className="editable-field w-full bg-white pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-slate-200 outline-none" placeholder="備註..." /></div>
+                                            <div className="md:col-span-2 relative"><i data-lucide="user" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.assignee} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { assignee: e.target.value })} className="editable-field w-full bg-white pl-9 pr-2 py-2.5 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 outline-none" placeholder="總負責人" /></div>
+                                            <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className={`editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold border border-slate-200 outline-none ${isParentDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
+                                            <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200"><input type="range" min="0" max="100" step="10" defaultValue={parent.status} disabled={children.length > 0 || !canEditParent} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span></div>
+                                            <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.note} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { note: e.target.value })} className="editable-field w-full bg-white pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-slate-200 outline-none" placeholder="備註..." /></div>
                                         </div>
                                     </div>
                                     {children.map(child => {
                                         const isChildDelayed = checkDelay(child);
+                                        const canEditChild = checkPermission(child.assignee);
                                         return (
                                         <div key={child.id} className={`p-4 rounded-xl border transition-all ${child.isApplicable ? `bg-white hover:border-slate-300 shadow-sm ${isChildDelayed ? 'border-impr-danger/30 bg-red-50/10' : 'border-slate-100'}` : 'bg-slate-50 border-transparent opacity-50'}`}>
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                                                <div className="flex items-center gap-3"><span className="text-slate-400 font-mono text-xs font-bold w-8 text-right">{child.code}</span><span className={`font-bold text-sm ${child.isApplicable ? 'text-slate-700' : 'line-through text-slate-400'}`}>{child.name}</span>{isChildDelayed && <span className="text-[9px] text-white bg-impr-danger px-1.5 py-0.5 rounded ml-2">延遲</span>}</div>
-                                                <button onClick={() => onUpdate(child.id, { isApplicable: !child.isApplicable })} className={`self-start sm:self-auto px-2 py-1 rounded text-[10px] font-bold border transition-colors ${child.isApplicable ? 'text-slate-400 border-slate-200' : 'bg-slate-600 text-white border-slate-600'}`}>{child.isApplicable ? "設為不適用" : "恢復適用"}</button>
+                                                <div className="flex items-center gap-3"><span className="text-slate-400 font-mono text-xs font-bold w-8 text-right">{child.code}</span><span className={`font-bold text-sm ${child.isApplicable ? 'text-slate-700' : 'line-through text-slate-400'}`}>{child.name}</span>{isChildDelayed && <span className="text-[9px] text-white bg-impr-danger px-1.5 py-0.5 rounded ml-2 flex items-center gap-0.5"><i data-lucide="alert-circle" className="w-2.5 h-2.5"></i> 延遲</span>}</div>
+                                                <button disabled={!canEditChild} onClick={() => onUpdate(child.id, { isApplicable: !child.isApplicable })} className={`self-start sm:self-auto px-2 py-1 rounded text-[10px] font-bold border transition-colors ${child.isApplicable ? 'text-slate-400 border-slate-200' : 'bg-slate-600 text-white border-slate-600'} ${!canEditChild ? 'opacity-50 cursor-not-allowed' : ''}`}>{child.isApplicable ? "設為不適用" : "恢復適用"}</button>
                                             </div>
                                             {child.isApplicable && (
                                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pl-0 sm:pl-11">
-                                                    <div className="md:col-span-2 relative"><i data-lucide="user" className="absolute left-3 top-3 w-3 h-3 text-slate-400"></i><input type="text" defaultValue={child.assignee} onBlur={(e) => onUpdate(child.id, { assignee: e.target.value })} className="editable-field w-full bg-slate-50 pl-8 pr-2 py-2 rounded-xl text-xs font-bold text-slate-600 border border-transparent outline-none" placeholder="負責人" /></div>
-                                                    <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className={`editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold border border-transparent outline-none ${isChildDelayed ? 'text-impr-danger' : 'text-slate-500'}`} /></div>
-                                                    <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent"><input type="range" min="0" max="100" step="10" defaultValue={child.status} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className={`text-xs font-black w-8 text-right font-mono ${isChildDelayed ? 'text-impr-danger' : 'text-impr-orange'}`}>{child.status}%</span></div>
-                                                    <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3 h-3 text-slate-300"></i><input type="text" defaultValue={child.note} onBlur={(e) => onUpdate(child.id, { note: e.target.value })} className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2 rounded-xl text-xs text-slate-600 border border-transparent outline-none" placeholder="備註..." /></div>
+                                                    <div className="md:col-span-2 relative"><i data-lucide="user" className="absolute left-3 top-3 w-3 h-3 text-slate-400"></i><input type="text" defaultValue={child.assignee} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { assignee: e.target.value })} className="editable-field w-full bg-slate-50 pl-8 pr-2 py-2 rounded-xl text-xs font-bold text-slate-600 border border-transparent outline-none" placeholder="負責人" /></div>
+                                                    <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className={`editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold border border-transparent outline-none ${isChildDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
+                                                    <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent"><input type="range" min="0" max="100" step="10" defaultValue={child.status} disabled={!canEditChild} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className={`text-xs font-black w-8 text-right font-mono ${isChildDelayed ? 'text-impr-danger' : 'text-impr-orange'}`}>{child.status}%</span></div>
+                                                    <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3 h-3 text-slate-300"></i><input type="text" defaultValue={child.note} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { note: e.target.value })} className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2 rounded-xl text-xs text-slate-600 border border-transparent outline-none" placeholder="備註..." /></div>
                                                 </div>
                                             )}
                                         </div>
@@ -488,18 +503,18 @@
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
-            // 讀取/儲存 LocalStorage (Use v5.2 key)
+            // 讀取/儲存 LocalStorage (Use v5.3 key)
             useEffect(() => {
                 if (user && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v5.2', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v5.2', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v5.3', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v5.3', JSON.stringify(tasks));
                 }
             }, [activities, tasks, user]);
 
             const fetchData = async (currUser) => {
                 setLoading(true);
-                const cachedActs = localStorage.getItem('impr_activities_v5.2');
-                const cachedTasks = localStorage.getItem('impr_tasks_v5.2');
+                const cachedActs = localStorage.getItem('impr_activities_v5.3');
+                const cachedTasks = localStorage.getItem('impr_tasks_v5.3');
 
                 if (cachedActs && cachedTasks) {
                     setActivities(JSON.parse(cachedActs));
@@ -518,9 +533,9 @@
                         
                         let allTasks = [];
                         defaultActs.forEach(act => {
-                            // 設定一些假日期以測試延遲功能
-                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: '', dueDate: i < 3 ? '2024-01-01' : '', note: '' }));
-                            ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
+                            // 設定 Joseph 為主要負責人，Arlena 為部分負責人以測試權限
+                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: i % 2 === 0 ? 'joseph' : 'Arlena', dueDate: i < 3 ? '2024-01-01' : '', note: '' }));
+                            ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: 'joseph', dueDate: '', note: '' }));
                         });
                         setTasks(allTasks);
                         setLoading(false);
@@ -531,8 +546,13 @@
             const handleLogin = (u, p) => {
                 if(!u) return setError('請輸入帳號');
                 setLoading(true);
+                // 模擬登入驗證
                 setTimeout(() => {
-                    const mockUser = { name: u, role: 'admin' };
+                    let mockUser;
+                    if(u.toLowerCase() === 'joseph') mockUser = { name: 'joseph', role: 'admin' };
+                    else if(u.toLowerCase() === 'arlena') mockUser = { name: 'Arlena', role: 'staff' }; // Match CSV case
+                    else return setError('帳號錯誤');
+                    
                     setUser(mockUser);
                     fetchData(mockUser);
                 }, 500);
@@ -551,8 +571,8 @@
                 const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', location: form.location, status: '籌備中' };
                 
                 let newTasks = [];
-                SURVEY_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_s_${i}`, activityId: newActId, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
-                ITEM_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_i_${i}`, activityId: newActId, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
+                SURVEY_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_s_${i}`, activityId: newActId, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: user.name, dueDate: '', note: '' }));
+                ITEM_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_i_${i}`, activityId: newActId, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: user.name, dueDate: '', note: '' }));
 
                 setTimeout(() => { 
                     setActivities(prev => [newAct, ...prev]);
@@ -565,7 +585,7 @@
 
             const handleCreateTask = async (actId, taskData) => {
                 const newId = 't' + Date.now();
-                const newTask = { id: newId, activityId: actId, code: taskData.code, name: taskData.name, type: taskData.type, status: 0, isApplicable: true, assignee: '', note: '', dueDate: '' };
+                const newTask = { id: newId, activityId: actId, code: taskData.code, name: taskData.name, type: taskData.type, status: 0, isApplicable: true, assignee: user.name, note: '', dueDate: '' };
                 setTasks(prev => [...prev, newTask]);
                 await callGAS({ action: 'createTask', ...newTask });
             };
@@ -582,6 +602,20 @@
                 setLoading(false);
             };
 
+            // 計算延遲任務數量
+            const getDelayedCount = (actId) => {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                return tasks.filter(t => 
+                    t.activityId === actId && 
+                    t.isApplicable && 
+                    t.status < 100 && 
+                    t.dueDate && 
+                    new Date(t.dueDate) < today
+                ).length;
+            };
+            
+            // 安全的進度計算
             const getProgress = (actId) => {
                 const actTasks = tasks.filter(t => t.activityId === actId);
                 const subTasks = actTasks.filter(c => c.isApplicable && String(c.code).includes('.'));
@@ -639,8 +673,8 @@
                                 </div>
                             )}
                             <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50/50 no-scrollbar space-y-8 pb-20">
-                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-impr-orange">場勘查核 (Survey)</h4><TaskHierarchy tasks={surveyTasks} onUpdate={handleUpdate} /></div>
-                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-blue-500">專案籌備 (Item)</h4><TaskHierarchy tasks={itemTasks} onUpdate={handleUpdate} /></div>
+                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-impr-orange">場勘查核 (Survey)</h4><TaskHierarchy tasks={surveyTasks} user={user} onUpdate={handleUpdate} /></div>
+                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-blue-500">專案籌備 (Item)</h4><TaskHierarchy tasks={itemTasks} user={user} onUpdate={handleUpdate} /></div>
                             </div>
                         </div>
                     </div>
@@ -691,8 +725,11 @@
                                         <button onClick={()=>setViewTab('history')} className={`flex-shrink-0 px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${viewTab==='history' ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-400'}`}>📦 歷史歸檔</button>
                                     </div>
                                     <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                                        {filteredActivities.length === 0 ? <div className="text-center py-20 text-slate-400 bg-white rounded-3xl border border-dashed border-slate-200"><i data-lucide="inbox" className="w-10 h-10 mx-auto mb-2 opacity-20"></i>{viewTab === 'active' ? '暫無專案' : '尚無歸檔資料'}</div> : filteredActivities.map(act => (
-                                            <div key={act.id} className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm p-5 sm:p-8 flex flex-col md:flex-row gap-6 hover:border-impr-orange/30 transition-all">
+                                        {filteredActivities.length === 0 ? <div className="text-center py-20 text-slate-400 bg-white rounded-3xl border border-dashed border-slate-200"><i data-lucide="inbox" className="w-10 h-10 mx-auto mb-2 opacity-20"></i>{viewTab === 'active' ? '暫無專案' : '尚無歸檔資料'}</div> : filteredActivities.map(act => {
+                                            const delayedCount = getDelayedCount(act.id);
+                                            return (
+                                            <div key={act.id} className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm p-5 sm:p-8 flex flex-col md:flex-row gap-6 hover:border-impr-orange/30 transition-all relative">
+                                                {delayedCount > 0 && <div className="absolute top-4 right-4 bg-red-50 text-red-600 px-3 py-1 rounded-full text-xs font-bold border border-red-100 flex items-center gap-1 shadow-sm"><i data-lucide="alert-triangle" className="w-3.5 h-3.5"></i> {delayedCount} 項延遲</div>}
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <select value={act.status} onChange={(e) => handleStatusChange(act.id, e.target.value)} className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`}><option value="籌備中">籌備中</option><option value="進行中">進行中</option><option value="已完工">已完工</option><option value="結案">結案</option></select>
@@ -705,7 +742,7 @@
                                                     <div className="flex gap-2"><button onClick={()=>setSelAct(act.id)} className="flex-1 sm:flex-none px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-black shadow-lg">管考明細</button><button onClick={()=>handleDelete(act.id)} className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-400 rounded-xl hover:text-red-500 hover:bg-red-50"><i data-lucide="trash-2" className="w-4 h-4"></i></button></div>
                                                 </div>
                                             </div>
-                                        ))}
+                                        )})}
                                     </div>
                                 </>
                             ) : activePage === 'team' ? <TeamManager /> : (
