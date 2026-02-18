@@ -102,8 +102,6 @@
         const GAS_API_URL = ""; 
 
         // --- 任務範本設定 (Professional Expanded Templates) ---
-        
-        // 11大類 68細項
         const SURVEY_TEMPLATE = [
             { code: '1', name: '場地基本條件 (Basic Info)' },
             { code: '1.1', name: '場地長寬高尺寸精確測量' },
@@ -112,7 +110,6 @@
             { code: '1.4', name: '地面材質與平整度檢查' },
             { code: '1.5', name: '天花板懸吊點與載重限制' },
             { code: '1.6', name: '場地現有損壞狀況紀錄(拍照存證)' },
-            
             { code: '2', name: '進撤場動線 (Access & Loading)' },
             { code: '2.1', name: '卸貨區位置與停車高度限制' },
             { code: '2.2', name: '貨梯規格測量(門寬/內部深寬高/載重)' },
@@ -120,7 +117,6 @@
             { code: '2.4', name: '進場施工時間限制與規定' },
             { code: '2.5', name: '撤場清運時間與垃圾處理規定' },
             { code: '2.6', name: '大型道具搬運路徑模擬' },
-
             { code: '3', name: '電力系統 (Power Supply)' },
             { code: '3.1', name: '總電力負載(安培數)確認' },
             { code: '3.2', name: '配電盤位置與接電方式(歐規/美規)' },
@@ -128,7 +124,6 @@
             { code: '3.4', name: '發電機停放位置與拉線路徑' },
             { code: '3.5', name: '牆面插座位置與電壓(110V/220V)' },
             { code: '3.6', name: '電力技師窗口聯繫' },
-
             { code: '4', name: '燈光音響視訊 (AV Systems)' },
             { code: '4.1', name: '現場原有音響設備測試' },
             { code: '4.2', name: '現場投影機/LED牆規格與訊號源' },
@@ -136,14 +131,12 @@
             { code: '4.4', name: '音控台架設位置確認' },
             { code: '4.5', name: '投影距離與布幕尺寸測量' },
             { code: '4.6', name: '現場迴音與隔音狀況評估' },
-
             { code: '5', name: '弱電與網路 (Network & Signals)' },
             { code: '5.1', name: '現場Wi-Fi強度與頻寬測試' },
             { code: '5.2', name: '各家電信(4G/5G)訊號強度實測' },
             { code: '5.3', name: '實體網路線(LAN)插孔位置' },
             { code: '5.4', name: '專線申請可行性評估' },
             { code: '5.5', name: '直播訊號傳輸路徑測試' },
-
             { code: '6', name: '消防與安全 (Safety)' },
             { code: '6.1', name: '緊急逃生出入口位置與標示' },
             { code: '6.2', name: '滅火器與消防栓位置清點' },
@@ -151,7 +144,6 @@
             { code: '6.4', name: '緊急醫療站設置空間' },
             { code: '6.5', name: '保全/警衛配置點' },
             { code: '6.6', name: 'AED設備位置確認' },
-
             { code: '7', name: '附屬設施 (Facilities)' },
             { code: '7.1', name: '貴賓休息室(VIP Room)設備確認' },
             { code: '7.2', name: '表演者梳化間位置與鏡台燈光' },
@@ -159,28 +151,24 @@
             { code: '7.4', name: '洗手間位置、數量與清潔度' },
             { code: '7.5', name: '無障礙設施與動線確認' },
             { code: '7.6', name: '吸菸區位置確認' },
-
             { code: '8', name: '餐飲支援 (Catering Support)' },
             { code: '8.1', name: '外燴備餐區(Pantry)位置' },
             { code: '8.2', name: '用水來源(清洗/飲用)確認' },
             { code: '8.3', name: '廚餘與垃圾處理動線' },
             { code: '8.4', name: '餐飲用電需求確認' },
             { code: '8.5', name: '送餐動線與時間規劃' },
-
             { code: '9', name: '環境控制 (Environment)' },
             { code: '9.1', name: '空調冷房能力與噪音測試' },
             { code: '9.2', name: '空調出風口位置(是否直吹舞台)' },
             { code: '9.3', name: '現場環境亮度與遮光需求' },
             { code: '9.4', name: '周邊噪音干擾評估' },
             { code: '9.5', name: '蚊蟲/異味狀況確認' },
-
             { code: '10', name: '行政與標示 (Signage & Admin)' },
             { code: '10.1', name: '報到區動線與桌椅擺設' },
             { code: '10.2', name: '場外指引立牌擺放點規劃' },
             { code: '10.3', name: '大型輸出/旗幟懸掛點確認' },
             { code: '10.4', name: '媒體接待區位置' },
             { code: '10.5', name: '寄物區空間規劃' },
-
             { code: '11', name: '法規與保險 (Regulation)' },
             { code: '11.1', name: '場地使用規範合約檢視' },
             { code: '11.2', name: '裝修施工申請與押金' },
@@ -190,7 +178,6 @@
             { code: '11.6', name: '著作權/音樂公播權申請' }
         ];
 
-        // 12大類 84細項
         const ITEM_TEMPLATE = [
             { code: '1', name: '專案管理與策略' },
             { code: '1.1', name: '專案時程表(Gantt Chart)制定' },
@@ -198,7 +185,6 @@
             { code: '1.3', name: '每週工作會議安排與記錄' },
             { code: '1.4', name: '風險管理計畫與備案(Plan B)' },
             { code: '1.5', name: '結案報告架構確認' },
-
             { code: '2', name: '視覺設計 (Visual Design)' },
             { code: '2.1', name: '主視覺 (KV) 概念提案' },
             { code: '2.2', name: '主視覺定案與延伸應用規範' },
@@ -209,7 +195,6 @@
             { code: '2.7', name: '簡報PPT模板設計' },
             { code: '2.8', name: '指引立牌與動線標示設計' },
             { code: '2.9', name: '活動手冊/議程表設計' },
-
             { code: '3', name: '文案與內容 (Content)' },
             { code: '3.1', name: '活動Slogan與主題發想' },
             { code: '3.2', name: '主持人講稿(Script)撰寫' },
@@ -217,14 +202,12 @@
             { code: '3.4', name: '新聞稿(Press Release)撰寫' },
             { code: '3.5', name: '活動宣傳文案(社群/EDM)' },
             { code: '3.6', name: '細部流程表(Rundown)製作' },
-
             { code: '4', name: '多媒體製作 (Multimedia)' },
             { code: '4.1', name: '暖場影片剪輯與製作' },
             { code: '4.2', name: '開場動畫(Opening)製作' },
             { code: '4.3', name: '過場/頒獎音樂音效挑選' },
             { code: '4.4', name: '現場直播訊號測試與設定' },
             { code: '4.5', name: '活動快剪快播需求確認' },
-
             { code: '5', name: '公關與邀請 (PR & RSVP)' },
             { code: '5.1', name: '貴賓邀請名單整理' },
             { code: '5.2', name: '邀請函寄送與電話追蹤' },
@@ -233,7 +216,6 @@
             { code: '5.5', name: '媒體邀請與採訪通知' },
             { code: '5.6', name: '媒體接待與新聞資料袋準備' },
             { code: '5.7', name: '貴賓停車證/通行證寄送' },
-
             { code: '6', name: '場地與硬體 (Venue & HW)' },
             { code: '6.1', name: '場地租借合約簽訂與付款' },
             { code: '6.2', name: '舞台結構與Truss架設圖確認' },
@@ -243,7 +225,6 @@
             { code: '6.6', name: '電力技師與發電機安排' },
             { code: '6.7', name: '桌椅租賃與擺設圖確認' },
             { code: '6.8', name: '無線電/耳麥通訊設備租借' },
-
             { code: '7', name: '佈置與道具 (Decor & Props)' },
             { code: '7.1', name: '大圖輸出發包與施工' },
             { code: '7.2', name: '花藝佈置/植栽租賃' },
@@ -251,7 +232,6 @@
             { code: '7.4', name: '拍照手拿板/道具製作' },
             { code: '7.5', name: '紅地毯/地貼鋪設' },
             { code: '7.6', name: '氣球/特殊效果佈置' },
-
             { code: '8', name: '餐飲服務 (Catering)' },
             { code: '8.1', name: '外燴廠商詢價與試菜' },
             { code: '8.2', name: '茶歇(Tea Break)點心確認' },
@@ -259,7 +239,6 @@
             { code: '8.4', name: '工作人員便當/飲料訂購' },
             { code: '8.5', name: '晚宴酒水安排' },
             { code: '8.6', name: '桌巾/椅套顏色確認' },
-
             { code: '9', name: '演藝與人力 (Talent & HR)' },
             { code: '9.1', name: '主持人敲定與合約簽署' },
             { code: '9.2', name: '表演團體/樂團邀請' },
@@ -268,7 +247,6 @@
             { code: '9.5', name: '攝影師(平面/動態)發包' },
             { code: '9.6', name: '工作人員職前訓練(Briefing)' },
             { code: '9.7', name: '工作人員服裝統一確認' },
-
             { code: '10', name: '禮品與物資 (Gifts)' },
             { code: '10.1', name: '貴賓伴手禮挑選與採購' },
             { code: '10.2', name: '禮品包裝與提袋製作' },
@@ -276,7 +254,6 @@
             { code: '10.4', name: '文具/報到物資準備' },
             { code: '10.5', name: '雨備物資(雨傘/雨衣)準備' },
             { code: '10.6', name: '防疫物資(口罩/酒精)準備' },
-
             { code: '11', name: '行政與保險 (Admin)' },
             { code: '11.1', name: '活動公共意外責任險投保' },
             { code: '11.2', name: '工作人員短期意外險投保' },
@@ -284,7 +261,6 @@
             { code: '11.4', name: '道路使用權/路權申請' },
             { code: '11.5', name: '停車位預留與繳費' },
             { code: '11.6', name: '各項合約用印與歸檔' },
-
             { code: '12', name: '結案與請款 (Closing)' },
             { code: '12.1', name: '活動照片/影片整理歸檔' },
             { code: '12.2', name: '新聞露出監測報告(Clipping)' },
@@ -416,6 +392,7 @@
                 <div className="space-y-4">
                     {parents.map(parent => {
                         const children = childrenMap[parent.code] || [];
+                        // 這裡使用普通變數計算，不使用 Hook
                         const activeChildren = children.filter(c => c.isApplicable);
                         const progress = activeChildren.length > 0 
                             ? Math.round(activeChildren.reduce((acc, curr) => acc + (Number(curr.status)||0), 0) / activeChildren.length) 
@@ -440,7 +417,7 @@
                                 </summary>
                                 
                                 <div className="p-3 sm:p-4 space-y-3 bg-white">
-                                    {/* 父任務 */}
+                                    {/* 父任務編輯區 */}
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className="w-1 h-3 bg-slate-400 rounded-full"></span>
@@ -472,7 +449,7 @@
                                         </div>
                                     </div>
 
-                                    {/* 子任務 */}
+                                    {/* 子任務編輯區 */}
                                     {children.length > 0 && (
                                         <div className="pl-2 sm:pl-4 border-l-2 border-slate-100 space-y-3">
                                             {children.map(child => (
@@ -634,6 +611,25 @@
                 }, 800);
             };
 
+            // 新增任務 (Add New Task)
+            const handleCreateTask = async (actId, taskData) => {
+                const newId = 't' + Date.now();
+                const newTask = {
+                    id: newId,
+                    activityId: actId,
+                    code: taskData.code,
+                    name: taskData.name,
+                    type: taskData.type,
+                    status: 0,
+                    isApplicable: true,
+                    assignee: '',
+                    note: '',
+                    dueDate: ''
+                };
+                setTasks(prev => [...prev, newTask]);
+                await callGAS({ action: 'createTask', ...newTask });
+            };
+
             const handleStatusChange = (actId, newStatus) => {
                 setActivities(prev => prev.map(a => a.id === actId ? { ...a, status: newStatus } : a));
             };
@@ -658,7 +654,7 @@
                 return 0;
             };
 
-            const DetailModal = ({ actId }) => {
+            const DetailModal = ({ actId, onCreateTask }) => {
                 const data = useMemo(() => {
                     const actTasks = tasks.filter(t => t.activityId === actId);
                     const subTasks = actTasks.filter(c => c.isApplicable && String(c.code).includes('.'));
@@ -675,6 +671,16 @@
                 const surveyTasks = data.allTasks.filter(t => t.type === 'SURVEY');
                 const itemTasks = data.allTasks.filter(t => t.type === 'ITEM');
 
+                const [isAdding, setIsAdding] = useState(false);
+                const [newTask, setNewTask] = useState({ type: 'SURVEY', code: '', name: '' });
+
+                const submitTask = () => {
+                    if(!newTask.code || !newTask.name) return alert('請輸入代碼與名稱');
+                    onCreateTask(actId, newTask);
+                    setIsAdding(false);
+                    setNewTask({ type: 'SURVEY', code: '', name: '' });
+                };
+
                 return (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-md">
                         <div className="bg-white w-full h-full sm:h-[90vh] sm:max-w-5xl sm:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-10">
@@ -686,8 +692,39 @@
                                         <p className="text-xs text-slate-400 font-bold">總進度：<span className="text-impr-orange font-black text-sm">{data.progress}%</span></p>
                                     </div>
                                 </div>
-                                <button onClick={()=>setSelAct(null)} className="w-9 h-9 flex items-center justify-center bg-slate-100 rounded-full text-slate-500"><i data-lucide="x" className="w-5 h-5"></i></button>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => setIsAdding(!isAdding)} className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-700 flex items-center gap-1 transition-colors">
+                                        <i data-lucide="plus" className="w-3 h-3"></i> 新增任務
+                                    </button>
+                                    <button onClick={()=>setSelAct(null)} className="w-9 h-9 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors"><i data-lucide="x" className="w-5 h-5"></i></button>
+                                </div>
                             </div>
+
+                            {/* 新增任務表單 */}
+                            {isAdding && (
+                                <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end animate-in slide-in-from-top-2">
+                                    <div className="sm:col-span-3">
+                                        <label className="text-[10px] font-bold text-slate-400 mb-1 block">類型</label>
+                                        <select className="w-full p-2 text-xs rounded-lg border font-bold outline-none" value={newTask.type} onChange={e => setNewTask({...newTask, type: e.target.value})}>
+                                            <option value="SURVEY">場勘查核 (Survey)</option>
+                                            <option value="ITEM">專案籌備 (Item)</option>
+                                        </select>
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <label className="text-[10px] font-bold text-slate-400 mb-1 block">代碼 (如 3.1)</label>
+                                        <input type="text" className="w-full p-2 text-xs rounded-lg border font-bold outline-none" placeholder="代碼" value={newTask.code} onChange={e => setNewTask({...newTask, code: e.target.value})} />
+                                    </div>
+                                    <div className="sm:col-span-5">
+                                        <label className="text-[10px] font-bold text-slate-400 mb-1 block">任務名稱</label>
+                                        <input type="text" className="w-full p-2 text-xs rounded-lg border font-bold outline-none" placeholder="輸入任務名稱..." value={newTask.name} onChange={e => setNewTask({...newTask, name: e.target.value})} />
+                                    </div>
+                                    <div className="sm:col-span-2 flex gap-2">
+                                        <button onClick={submitTask} className="flex-1 py-2 bg-impr-orange text-white text-xs font-bold rounded-lg hover:bg-orange-600">確認</button>
+                                        <button onClick={() => setIsAdding(false)} className="px-3 py-2 bg-white border text-xs font-bold rounded-lg text-slate-500 hover:bg-slate-50">取消</button>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50/50 no-scrollbar space-y-8 pb-20">
                                 <div>
                                     <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-impr-orange">場勘查核 (Survey)</h4>
@@ -897,7 +934,7 @@
                         </div>
                     )}
 
-                    {selAct && <DetailModal actId={selAct} />}
+                    {selAct && <DetailModal actId={selAct} onCreateTask={handleCreateTask} />}
                 </div>
             );
         };
