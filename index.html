@@ -166,8 +166,8 @@
         // --- 子組件: 統計儀表板 ---
         const DashboardStats = ({ activities }) => {
             const total = activities.length;
-            const ongoing = activities.filter(a => a.status === '進行中' || a.status === '籌備中').length;
-            const completed = activities.filter(a => a.status === '已完工' || a.status === '結案').length;
+            const ongoing = activities.filter(a => !['已完工', '結案'].includes(a.status)).length;
+            const completed = activities.filter(a => ['已完工', '結案'].includes(a.status)).length;
             
             return (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -188,7 +188,7 @@
                     <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
                         <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600"><i data-lucide="check-circle-2" className="w-6 h-6"></i></div>
                         <div>
-                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">已完工</p>
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">已完工歸檔</p>
                             <p className="text-2xl font-black text-slate-800">{completed}</p>
                         </div>
                     </div>
@@ -204,7 +204,6 @@
                 
                 const allCodes = new Set(tasks.map(t => String(t.code)));
 
-                // 排序：確保 1 在 1.1 之前
                 const sortedTasks = [...tasks].sort((a, b) => {
                     const partsA = String(a.code).split('.').map(Number);
                     const partsB = String(b.code).split('.').map(Number);
@@ -216,7 +215,6 @@
                     return 0;
                 });
 
-                // 分組
                 sortedTasks.forEach(t => {
                     const codeStr = String(t.code);
                     const isPotentialChild = codeStr.includes('.');
@@ -262,7 +260,6 @@
                                 </summary>
                                 
                                 <div className="p-4 space-y-3 bg-white">
-                                    {/* 父任務本身也可編輯 (Always visible) */}
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className="w-1.5 h-4 bg-slate-400 rounded-full"></span>
@@ -280,14 +277,13 @@
                                                     onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })}
                                                     className="editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-slate-500 border border-slate-200 outline-none" />
                                             </div>
-                                            {/* 如果有子任務，父任務進度通常由子任務決定，但這裡保留手動調整權限作為 Override 或備註 */}
                                             <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200 focus-within:border-impr-orange transition-all">
                                                 <input type="range" min="0" max="100" step="10" defaultValue={parent.status}
                                                     onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }}
                                                     onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })}
                                                     onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })}
                                                     className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" 
-                                                    disabled={children.length > 0} // 若有子任務，建議鎖定父任務進度條 (由計算得出)
+                                                    disabled={children.length > 0} 
                                                     title={children.length > 0 ? "進度由子任務自動計算" : "手動調整進度"}
                                                 />
                                                 <span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span>
@@ -301,7 +297,6 @@
                                         </div>
                                     </div>
 
-                                    {/* 子任務編輯區 */}
                                     {children.length > 0 && (
                                         <div className="pl-4 border-l-2 border-slate-100 space-y-3">
                                             {children.map(child => (
@@ -428,13 +423,13 @@
                         <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30 no-scrollbar space-y-12">
                             <div>
                                 <h4 className="text-sm font-black text-slate-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-l-4 border-impr-orange pl-3">
-                                    場勘查核程序 (Survey)
+                                    場勘查核程序 (Survey) - <span className="text-slate-400 font-normal ml-1">{surveyTasks.length} 項</span>
                                 </h4>
                                 <TaskHierarchy tasks={surveyTasks} onUpdate={onUpdate} />
                             </div>
                             <div>
                                 <h4 className="text-sm font-black text-slate-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-l-4 border-blue-500 pl-3">
-                                    專案籌備執行 (Item)
+                                    專案籌備執行 (Item) - <span className="text-slate-400 font-normal ml-1">{itemTasks.length} 項</span>
                                 </h4>
                                 <TaskHierarchy tasks={itemTasks} onUpdate={onUpdate} />
                             </div>
@@ -454,20 +449,20 @@
             const [isCreateOpen, setIsCreateOpen] = useState(false);
             const [error, setError] = useState('');
             const [sidebarImgError, setSidebarImgError] = useState(false);
-            // 新增 location 欄位
             const [form, setForm] = useState({ name: '', clientName: '', startDate: '', endDate: '', location: '' });
+            const [viewTab, setViewTab] = useState('active'); // active | history
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
             const fetchData = async (currUser) => {
                 setLoading(true);
-                // 模擬資料載入
                 setTimeout(() => {
                     setActivities([
                         { id: 'a1', name: '115年度產業數位轉型高峰會', clientName: 'IMPR 管考組', location: '台北國際會議中心', status: '進行中' },
-                        { id: 'a2', name: '春季新品發表專案', clientName: '市場開發部', location: '高雄展覽館', status: '籌備中' }
+                        { id: 'a2', name: '春季新品發表專案', clientName: '市場開發部', location: '高雄展覽館', status: '籌備中' },
+                        { id: 'a3', name: '114年度年終尾牙', clientName: '人資部', location: '大飯店', status: '已完工' }
                     ]);
-                    // 初始化時也生成範本任務，確保畫面看起來有內容
+                    
                     const generateMockTasks = (actId) => {
                         const all = [];
                         SURVEY_TEMPLATE.forEach((t, i) => all.push({ id: `${actId}_s_${i}`, activityId: actId, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
@@ -476,7 +471,8 @@
                     }
                     const t1 = generateMockTasks('a1');
                     const t2 = generateMockTasks('a2');
-                    setTasks([...t1, ...t2]);
+                    const t3 = generateMockTasks('a3');
+                    setTasks([...t1, ...t2, ...t3]);
                     setLoading(false);
                 }, 800);
             };
@@ -503,7 +499,6 @@
                 const newActId = 'a' + Date.now();
                 const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', location: form.location, status: '籌備中' };
                 
-                // 強制導入完整範本
                 const generateTasksFromTemplate = (template, type) => {
                     return template.map((t, index) => ({
                         id: `t_${newActId}_${type}_${index}`,
@@ -569,6 +564,13 @@
                 return map;
             }, [activities, tasks]);
 
+            const filteredActivities = useMemo(() => {
+                return activities.filter(act => {
+                    const isHistory = ['已完工', '結案'].includes(act.status);
+                    return viewTab === 'history' ? isHistory : !isHistory;
+                });
+            }, [activities, viewTab]);
+
             if (!user) return <LoginPage onLogin={handleLogin} loading={loading} error={error} />;
 
             return (
@@ -627,14 +629,31 @@
                             {/* 統計看板 */}
                             <DashboardStats activities={activities} />
 
+                            {/* 分頁切換 */}
+                            <div className="flex items-center gap-4 mb-6">
+                                <button onClick={()=>setViewTab('active')} 
+                                    className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all ${viewTab==='active' ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-400 hover:bg-slate-50'}`}>
+                                    🚀 執行中專案
+                                </button>
+                                <button onClick={()=>setViewTab('history')} 
+                                    className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all ${viewTab==='history' ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-400 hover:bg-slate-50'}`}>
+                                    📦 歷史歸檔區
+                                </button>
+                            </div>
+
                             <div className="grid grid-cols-1 gap-6">
-                                {activities.length === 0 ? (
-                                    <div className="text-center py-20 text-slate-400">尚無專案，請點擊右上角新增</div>
-                                ) : activities.map(act => (
+                                {filteredActivities.length === 0 ? (
+                                    <div className="text-center py-20 text-slate-400 bg-white rounded-3xl border border-dashed border-slate-200">
+                                        <i data-lucide="inbox" className="w-12 h-12 mx-auto mb-3 opacity-20"></i>
+                                        {viewTab === 'active' ? '目前沒有執行中的專案，請點擊右上角新增' : '尚無歷史歸檔專案'}
+                                    </div>
+                                ) : filteredActivities.map(act => (
                                     <div key={act.id} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 flex flex-col md:flex-row md:items-center justify-between gap-8 group hover:border-impr-orange/30 transition-all">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black border border-blue-100 uppercase tracking-widest">{act.status}</span>
+                                                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                                    {act.status}
+                                                </span>
                                             </div>
                                             <h2 className="text-xl font-black text-slate-800 mb-1 tracking-tight group-hover:text-impr-orange transition-colors">{act.name}</h2>
                                             <div className="flex items-center gap-4 text-xs font-bold text-slate-400 mt-2">
