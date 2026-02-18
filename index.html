@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>impr 專案管考系統 - 企業版</title>
+    <title>IMPR 專案管考系統 - 企業版</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -14,29 +14,56 @@
             theme: {
                 extend: {
                     colors: {
-                        impr: { orange: '#F28C00', dark: '#0f172a' }
+                        impr: { 
+                            orange: '#F28C00', 
+                            dark: '#0f172a',
+                            slate: '#1e293b'
+                        }
                     }
                 }
             }
         }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
         .company-logo { max-width: 220px; max-height: 80px; object-fit: contain; }
         .sidebar-fixed { width: 260px; flex-shrink: 0; }
         .content-area { flex: 1; min-width: 0; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* 摺疊元件樣式優化 */
         details > summary { list-style: none; cursor: pointer; outline: none; }
         details > summary::-webkit-details-marker { display: none; }
         details[open] > summary { border-bottom: 1px solid #f1f5f9; }
         
-        /* 進度條樣式 */
+        /* 自定義進度條樣式 */
         input[type=range] { -webkit-appearance: none; background: transparent; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #F28C00; margin-top: -6px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #e2e8f0; border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb { 
+            -webkit-appearance: none; 
+            height: 18px; width: 18px; 
+            border-radius: 50%; 
+            background: #F28C00; 
+            margin-top: -7px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+            border: 2px solid white;
+            transition: transform 0.1s;
+        }
+        input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
+        input[type=range]::-webkit-slider-runnable-track { 
+            width: 100%; height: 4px; 
+            cursor: pointer; 
+            background: #e2e8f0; 
+            border-radius: 2px; 
+        }
+
+        /* 編輯欄位互動效果 */
+        .editable-field { transition: all 0.2s; }
+        .editable-field:hover { background-color: #fff; border-color: #e2e8f0; }
+        .editable-field:focus {
+            background-color: white;
+            border-color: #F28C00;
+            box-shadow: 0 0 0 3px rgba(242, 140, 0, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -46,44 +73,80 @@
         const { useState, useEffect, useMemo, useCallback } = React;
         
         // --- 設定區 ---
-        const USE_MOCK_DATA = false; 
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwqOxUrDi9ArfE5L53k_eprrH3cxUpdZVxoHhBlR6AbHFA-QkoK9K8iSJWX7WEEqEku/exec"; // ★ 請在此填入您的 Google Apps Script 網址 ★
-        const logoUrl = "logo.png";
+        const logoUrl = "logo.png"; // 請確認此路徑正確，或依賴下方的 SVG 備援
+        const GAS_API_URL = ""; 
 
-        const callGAS = async (payload) => {
-            if (USE_MOCK_DATA) return null;
-            const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
-            return await res.json();
-        };
-
-        // --- 子組件 ---
-        const LoginPage = ({ u, setU, p, setP, onLogin, loading, error }) => (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-                <div className="w-full max-w-sm bg-white rounded-[2.5rem] shadow-xl p-10 text-center border border-slate-100">
-                    <img src={logoUrl} className="company-logo mx-auto mb-6" onError={e=>e.target.src='https://via.placeholder.com/150x50?text=impr'}/>
-                    <h2 className="text-xl font-black text-slate-800 mb-6">專案管考系統</h2>
-                    <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-4 mb-3 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:border-impr-orange" placeholder="帳號" />
-                    <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-4 mb-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:border-impr-orange" placeholder="密碼" />
-                    {error && <div className="text-red-500 text-xs font-bold mb-3">{error}</div>}
-                    <button onClick={onLogin} disabled={loading} className="w-full py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 transition-all shadow-lg shadow-orange-200">
-                        {loading ? "登入中..." : "登入"}
-                    </button>
-                </div>
-            </div>
+        // 預設 Logo SVG (當圖片路徑失效時使用)
+        const IMPR_LOGO_SVG = (className = "w-12 h-12") => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(242, 140, 0, 0.1)"/>
+                <path d="M12 8v4M12 16h.01" stroke="#F28C00" strokeWidth="3"/>
+                <circle cx="12" cy="12" r="10" stroke="#F28C00" strokeWidth="1" opacity="0.3" />
+            </svg>
         );
 
-        // --- 階層任務列表 (核心功能) ---
+        const callGAS = async (payload) => {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                return new Promise((resolve, reject) => {
+                    google.script.run
+                        .withSuccessHandler(resolve)
+                        .withFailureHandler(reject)
+                        .processAction(payload);
+                });
+            }
+            console.log("模擬 API 呼叫:", payload);
+            return { status: 'success' };
+        };
+
+        // --- 子組件: 登入頁 ---
+        const LoginPage = ({ onLogin, loading, error }) => {
+            const [u, setU] = useState('');
+            const [p, setP] = useState('');
+            const [imgError, setImgError] = useState(false);
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+                    <div className="w-full max-w-sm bg-white rounded-[3rem] shadow-2xl p-10 text-center border border-slate-200 animate-in zoom-in-95 duration-500">
+                        <div className="flex justify-center mb-6">
+                            {!imgError ? (
+                                <img 
+                                    src={logoUrl} 
+                                    className="company-logo mx-auto" 
+                                    onError={() => setImgError(true)}
+                                    alt="IMPR Logo"
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center">
+                                    {IMPR_LOGO_SVG("w-16 h-16")}
+                                    <span className="font-black text-2xl text-impr-orange mt-2 italic tracking-tighter">IMPR</span>
+                                </div>
+                            )}
+                        </div>
+                        <h2 className="text-xl font-black text-slate-800 mb-8 tracking-tight italic">專案進度管考系統</h2>
+                        <div className="space-y-3">
+                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="帳號" />
+                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="密碼" />
+                        </div>
+                        {error && <div className="text-red-500 text-xs font-bold mt-4">{error}</div>}
+                        <button onClick={() => onLogin(u, p)} disabled={loading} className="w-full mt-8 py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/30 active:scale-95">
+                            {loading ? "連線中..." : "登入系統"}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 核心組件: 階層式任務列表 (支援直接編輯) ---
         const TaskHierarchy = ({ tasks, onUpdate }) => {
             // 資料處理：將任務分組為 父(無小數點) -> 子(有小數點)
             const { parents, childrenMap } = useMemo(() => {
                 const parents = [];
                 const childrenMap = {};
                 
-                // 先將任務排序
+                // 排序邏輯：支援 1, 1.1, 1.2, 2, 2.1 ...
                 const sortedTasks = [...tasks].sort((a, b) => {
-                    // 簡單的數字/版本號排序邏輯
-                    const partsA = a.code.toString().split('.').map(Number);
-                    const partsB = b.code.toString().split('.').map(Number);
+                    const partsA = String(a.code).split('.').map(Number);
+                    const partsB = String(b.code).split('.').map(Number);
                     for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
                         const valA = partsA[i] || 0;
                         const valB = partsB[i] || 0;
@@ -111,10 +174,10 @@
                 <div className="space-y-4">
                     {parents.map(parent => {
                         const children = childrenMap[parent.code] || [];
-                        // 計算父任務進度顯示 (僅供參考，實際以後端計算為主)
+                        // 計算父任務進度顯示 (僅供參考，實際以後端或前端即時計算為主)
                         const activeChildren = children.filter(c => c.isApplicable);
                         const progress = activeChildren.length > 0 
-                            ? Math.round(activeChildren.reduce((acc, curr) => acc + curr.status, 0) / activeChildren.length) 
+                            ? Math.round(activeChildren.reduce((acc, curr) => acc + (Number(curr.status)||0), 0) / activeChildren.length) 
                             : 0;
 
                         return (
@@ -122,10 +185,10 @@
                                 <summary className="flex items-center justify-between p-5 bg-slate-50/50 hover:bg-slate-100 transition-colors select-none">
                                     <div className="flex items-center gap-4">
                                         <span className="w-8 h-8 flex items-center justify-center bg-slate-800 text-white text-xs font-mono font-bold rounded-lg shadow-sm">{parent.code}</span>
-                                        <span className="font-black text-slate-700 text-sm">{parent.name}</span>
+                                        <span className="font-black text-slate-700 text-sm tracking-tight">{parent.name}</span>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-2 px-3 py-1 bg-white rounded-lg border border-slate-200">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-lg border border-slate-200">
                                             <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                                 <div className="h-full bg-impr-orange" style={{width: `${progress}%`}}></div>
                                             </div>
@@ -139,7 +202,7 @@
                                     {children.map(child => (
                                         <div key={child.id} className={`p-4 rounded-xl border transition-all ${child.isApplicable ? 'bg-white border-slate-100 hover:border-slate-300' : 'bg-slate-50 border-transparent opacity-50'}`}>
                                             
-                                            {/* 第一行：標題與基本資訊 */}
+                                            {/* 第一行：標題與適用性切換 */}
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-slate-400 font-mono text-xs font-bold w-8">{child.code}</span>
@@ -147,53 +210,53 @@
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                      <button onClick={() => onUpdate(child.id, { isApplicable: !child.isApplicable })} 
-                                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border ${child.isApplicable ? 'text-slate-400 border-slate-200 hover:bg-slate-50' : 'bg-slate-600 text-white border-slate-600'}`}>
+                                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-colors ${child.isApplicable ? 'text-slate-400 border-slate-200 hover:bg-slate-50' : 'bg-slate-600 text-white border-slate-600'}`}>
                                                         {child.isApplicable ? "設為不適用" : "恢復適用"}
                                                      </button>
                                                 </div>
                                             </div>
 
-                                            {/* 第二行：編輯欄位 (僅在適用時可編輯) */}
+                                            {/* 第二行：直接編輯欄位 (Direct Edit) */}
                                             {child.isApplicable && (
                                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
                                                     
-                                                    {/* 負責人 */}
+                                                    {/* 負責人 (Assignee) */}
                                                     <div className="md:col-span-2">
-                                                        <div className="relative">
-                                                            <i data-lucide="user" className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400"></i>
+                                                        <div className="relative group">
+                                                            <i data-lucide="user" className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 group-focus-within:text-impr-orange"></i>
                                                             <input type="text" defaultValue={child.assignee} 
                                                                 onBlur={(e) => onUpdate(child.id, { assignee: e.target.value })}
-                                                                className="w-full bg-slate-50 pl-8 pr-2 py-2 rounded-lg text-xs font-bold text-slate-600 border border-transparent focus:border-impr-orange focus:bg-white outline-none"
+                                                                className="editable-field w-full bg-slate-50 pl-8 pr-2 py-2.5 rounded-xl text-xs font-bold text-slate-600 border border-transparent outline-none"
                                                                 placeholder="負責人" />
                                                         </div>
                                                     </div>
 
-                                                    {/* 期限 */}
+                                                    {/* 期限 (Deadline) */}
                                                     <div className="md:col-span-2">
                                                         <input type="date" defaultValue={child.dueDate} 
                                                             onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })}
-                                                            className="w-full bg-slate-50 px-2 py-2 rounded-lg text-xs font-mono text-slate-500 border border-transparent focus:border-impr-orange focus:bg-white outline-none" />
+                                                            className="editable-field w-full bg-slate-50 px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-slate-500 border border-transparent outline-none" />
                                                     </div>
 
-                                                    {/* 進度滑桿 */}
-                                                    <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-lg">
+                                                    {/* 進度 (Progress Slider) */}
+                                                    <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent focus-within:bg-white focus-within:border-impr-orange transition-all">
                                                         <input type="range" min="0" max="100" step="10" defaultValue={child.status}
                                                             onChange={(e) => {
-                                                                // 即時更新數值顯示 (這需要狀態管理，這裡簡化處理直接觸發更新)
-                                                                const val = Number(e.target.value);
-                                                                e.target.nextElementSibling.innerText = val + '%';
+                                                                // 即時更新顯示數值
+                                                                e.target.nextElementSibling.innerText = e.target.value + '%';
                                                             }}
                                                             onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })}
                                                             onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })}
                                                             className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" />
-                                                        <span className="text-xs font-black text-impr-orange w-8 text-right">{child.status}%</span>
+                                                        <span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{child.status}%</span>
                                                     </div>
 
-                                                    {/* 說明欄 */}
-                                                    <div className="md:col-span-5">
+                                                    {/* 說明 (Note) */}
+                                                    <div className="md:col-span-5 relative group">
+                                                        <i data-lucide="message-square" className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300 group-focus-within:text-impr-orange"></i>
                                                         <input type="text" defaultValue={child.note} 
                                                             onBlur={(e) => onUpdate(child.id, { note: e.target.value })}
-                                                            className="w-full bg-slate-50 px-3 py-2 rounded-lg text-xs text-slate-600 border border-transparent focus:border-slate-300 focus:bg-white outline-none placeholder:text-slate-300"
+                                                            className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-transparent outline-none placeholder:text-slate-300"
                                                             placeholder="備註說明..." />
                                                     </div>
                                                 </div>
@@ -211,29 +274,32 @@
         const DetailModal = ({ actId, onClose, progressData, onUpdate }) => {
             const data = progressData[actId];
             if (!data) return null;
-            const surveyTasks = data.allTasks.filter(t => t.type === 'SURVEY' || t.type === 'Survey');
-            const itemTasks = data.allTasks.filter(t => t.type === 'ITEM' || t.type === 'Item');
+            const surveyTasks = data.allTasks.filter(t => t.type?.toUpperCase() === 'SURVEY');
+            const itemTasks = data.allTasks.filter(t => t.type?.toUpperCase() === 'ITEM');
 
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
                     <div className="bg-white w-full max-w-5xl h-[90vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
                         <div className="px-8 py-5 border-b flex justify-between items-center bg-white z-10">
-                            <div>
-                                <h3 className="text-xl font-black text-slate-800">專案任務明細</h3>
-                                <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest">總進度：<span className="text-impr-orange font-bold text-sm">{data.progress}%</span></p>
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-slate-50 rounded-xl"><i data-lucide="layers" className="text-impr-orange"></i></div>
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-800 italic tracking-tight">專案任務明細</h3>
+                                    <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold">目前累計總進度：<span className="text-impr-orange font-black text-sm">{data.progress}%</span></p>
+                                </div>
                             </div>
                             <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-slate-50 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"><i data-lucide="x" className="w-4 h-4"></i></button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-8 bg-slate-50/50 no-scrollbar">
-                            <div className="mb-10">
-                                <h4 className="text-sm font-black text-slate-600 uppercase tracking-widest mb-4 flex items-center gap-2 border-l-4 border-impr-orange pl-3">
-                                    <i data-lucide="map-pin" className="w-4 h-4 text-impr-orange"></i> 場勘查核 (Survey)
+                        <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30 no-scrollbar space-y-12">
+                            <div>
+                                <h4 className="text-sm font-black text-slate-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-l-4 border-impr-orange pl-3">
+                                    場勘查核程序 (Survey)
                                 </h4>
                                 <TaskHierarchy tasks={surveyTasks} onUpdate={onUpdate} />
                             </div>
                             <div>
-                                <h4 className="text-sm font-black text-slate-600 uppercase tracking-widest mb-4 flex items-center gap-2 border-l-4 border-blue-500 pl-3">
-                                    <i data-lucide="list-checks" className="w-4 h-4 text-blue-500"></i> 專案籌備 (Item)
+                                <h4 className="text-sm font-black text-slate-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-l-4 border-blue-500 pl-3">
+                                    專案籌備執行 (Item)
                                 </h4>
                                 <TaskHierarchy tasks={itemTasks} onUpdate={onUpdate} />
                             </div>
@@ -243,130 +309,185 @@
             );
         };
 
-        // --- 主 App (簡化) ---
+        // --- 主 App ---
         const App = () => {
             const [user, setUser] = useState(null);
             const [activities, setActivities] = useState([]);
             const [tasks, setTasks] = useState([]);
             const [loading, setLoading] = useState(false);
-            const [u, setU] = useState('');
-            const [p, setP] = useState('');
-            const [error, setError] = useState('');
             const [selAct, setSelAct] = useState(null);
             const [isCreateOpen, setIsCreateOpen] = useState(false);
+            const [error, setError] = useState('');
+            const [sidebarImgError, setSidebarImgError] = useState(false);
             const [form, setForm] = useState({ name: '', clientName: '', startDate: '', endDate: '' });
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
-            const fetchData = async (curr) => {
+            const fetchData = async (currUser) => {
                 setLoading(true);
-                try {
-                    const res = await callGAS({ action: 'getData', role: curr.role, name: curr.name });
-                    if (res.status === 'success') { setActivities(res.activities); setTasks(res.tasks); }
-                } catch(e) {}
-                setLoading(false);
+                // 模擬資料載入
+                setTimeout(() => {
+                    setActivities([
+                        { id: 'a1', name: '115年度產業數位轉型高峰會', clientName: 'IMPR 管考組', status: '進行中' },
+                        { id: 'a2', name: '春季新品發表專案', clientName: '市場開發部', status: '籌備中' }
+                    ]);
+                    setTasks([
+                        { id: 't1', activityId: 'a1', code: 1, name: '場地查核', type: 'SURVEY', isApplicable: true },
+                        { id: 't2', activityId: 'a1', code: '1.1', name: '空間坪數測量', type: 'SURVEY', status: 100, isApplicable: true, assignee: '陳課長', dueDate: '2026-03-01', note: '尺寸測量完畢' },
+                        { id: 't3', activityId: 'a1', code: '1.2', name: '電力負載確認', type: 'SURVEY', status: 20, isApplicable: true, assignee: '林專員', dueDate: '2026-03-05' },
+                        { id: 't4', activityId: 'a1', code: 2, name: '主視覺設計', type: 'ITEM', isApplicable: true },
+                        { id: 't5', activityId: 'a1', code: '2.1', name: '初稿設計與審核', type: 'ITEM', status: 0, isApplicable: true, assignee: '王設計師' }
+                    ]);
+                    setLoading(false);
+                }, 800);
             };
 
-            const handleLogin = async (e) => {
-                e.preventDefault();
+            const handleLogin = (u, p) => {
+                if(!u || !p) return setError('請輸入帳號密碼');
                 setLoading(true);
-                const res = await callGAS({ action: 'login', username: u, password: p });
-                if (res && res.status === 'success') { setUser(res.user); fetchData(res.user); }
-                else setError('登入失敗');
-                setLoading(false);
+                setTimeout(() => {
+                    const mockUser = { name: u, role: u === 'admin' ? 'admin' : 'staff' };
+                    setUser(mockUser);
+                    fetchData(mockUser);
+                }, 500);
             };
 
             const handleUpdate = async (tId, updates) => {
-                // 樂觀更新前端狀態
+                // 樂觀更新 (Optimistic UI Update)
                 setTasks(prev => prev.map(t => t.id === tId ? { ...t, ...updates } : t));
-                // 發送至後端
                 await callGAS({ action: 'updateTask', taskId: tId, ...updates });
             };
 
             const handleCreate = async () => {
                 if(!form.name) return;
                 setLoading(true);
-                const res = await callGAS({ action: 'createActivity', ...form, manager: user.name });
-                if (res.status === 'success') { setTimeout(() => { fetchData(user); setIsCreateOpen(false); setForm({name:'',clientName:'',startDate:'',endDate:''}); }, 3000); }
-                else setLoading(false);
+                await callGAS({ action: 'createActivity', ...form, manager: user.name });
+                // 模擬新增成功
+                setTimeout(() => { 
+                    fetchData(user); 
+                    setIsCreateOpen(false); 
+                    setForm({name:'',clientName:'',startDate:'',endDate:''}); 
+                }, 1000);
             };
 
             const handleDelete = async (actId) => {
                 if(!confirm('確定刪除此專案？')) return;
                 setLoading(true);
-                const res = await callGAS({ action: 'deleteActivity', activityId: actId });
-                if (res.status === 'success') fetchData(user);
+                await callGAS({ action: 'deleteActivity', activityId: actId });
+                // 模擬刪除
+                setActivities(prev => prev.filter(a => a.id !== actId));
                 setLoading(false);
             };
 
             const progressData = useMemo(() => {
                 const map = {};
                 activities.forEach(a => {
-                    const aTasks = tasks.filter(t => t.activityId === a.id && t.isApplicable);
-                    const prog = aTasks.length > 0 ? Math.round((aTasks.reduce((s,t)=>s+t.status,0) / aTasks.length)) : 0;
+                    const aTasks = tasks.filter(t => t.activityId === a.id && t.isApplicable && String(t.code).includes('.'));
+                    const prog = aTasks.length > 0 ? Math.round((aTasks.reduce((s,t)=>s+(Number(t.status)||0),0) / aTasks.length)) : 0;
                     map[a.id] = { progress: prog, allTasks: tasks.filter(t => t.activityId === a.id) };
                 });
                 return map;
             }, [activities, tasks]);
 
-            if (!user) return <LoginPage u={u} setU={setU} p={p} setP={setP} onLogin={handleLogin} loading={loading} error={error} />;
+            if (!user) return <LoginPage onLogin={handleLogin} loading={loading} error={error} />;
 
             return (
-                <div className="flex h-screen bg-slate-50 overflow-hidden">
+                <div className="flex h-screen bg-white overflow-hidden">
+                    {/* 側邊欄 */}
                     <div className="sidebar-fixed bg-impr-dark flex flex-col text-white shadow-2xl p-6">
-                        <div className="flex justify-center mb-6"><img src={logoUrl} className="h-10 object-contain" onError={e=>e.target.style.display='none'}/></div>
+                        <div className="flex flex-col items-center mb-10 pt-4">
+                            {!sidebarImgError ? (
+                                <img 
+                                    src={logoUrl} 
+                                    className="h-12 mb-2 object-contain" 
+                                    onError={() => setSidebarImgError(true)}
+                                    alt="Sidebar Logo"
+                                />
+                            ) : (
+                                <div className="p-2 bg-white/10 rounded-xl border border-white/20 mb-2">
+                                    {IMPR_LOGO_SVG("w-8 h-8")}
+                                </div>
+                            )}
+                            <div className="text-center">
+                                <span className="font-black text-lg tracking-tighter italic">IMPR HUB</span>
+                                <div className="h-0.5 w-12 bg-impr-orange mx-auto mt-1 rounded-full"></div>
+                            </div>
+                        </div>
                         <nav className="flex-1 space-y-2">
-                            <div className="bg-impr-orange p-3 rounded-xl font-bold flex gap-3 cursor-default"><i data-lucide="layout-dashboard" className="w-5 h-5"></i> 專案列表</div>
+                            <div className="bg-impr-orange p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 shadow-lg shadow-orange-500/20 cursor-default">
+                                <i data-lucide="layout-dashboard" className="w-5 h-5"></i> 專案管考清單
+                            </div>
                         </nav>
-                        <button onClick={()=>setUser(null)} className="py-2 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white">登出</button>
+                        <div className="mt-auto border-t border-slate-800 pt-6">
+                            <div className="flex items-center gap-3 mb-6 bg-slate-800/50 p-3 rounded-2xl border border-slate-700">
+                                <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center font-bold text-xs uppercase border border-slate-500">{user.name[0]}</div>
+                                <div className="flex-1 overflow-hidden">
+                                    <p className="text-xs font-black truncate">{user.name}</p>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{user.role}</p>
+                                </div>
+                            </div>
+                            <button onClick={()=>setUser(null)} className="w-full py-3.5 border border-slate-700 rounded-2xl text-[10px] font-black text-slate-400 hover:text-white hover:border-slate-500 transition-all flex items-center justify-center gap-2">
+                                <i data-lucide="log-out" className="w-3.5 h-3.5 text-rose-500"></i> 安全登出
+                            </button>
+                        </div>
                     </div>
+
+                    {/* 主內容區 */}
                     <div className="content-area flex flex-col h-full bg-slate-50 overflow-hidden">
-                        <header className="px-8 py-6 bg-white border-b flex justify-between items-center">
-                            <h1 className="text-2xl font-black text-slate-800 italic">專案管理系統</h1>
-                            <div className="text-xs font-bold text-slate-400">{user.name} ({user.role})</div>
+                        <header className="px-10 py-8 bg-white border-b flex justify-between items-center sticky top-0 z-10 shadow-sm">
+                            <h1 className="text-2xl font-black text-slate-800 tracking-tighter italic">活動進度管考看板</h1>
+                            <div className="flex items-center gap-4">
+                                {user.role === 'admin' && (
+                                    <button onClick={()=>setIsCreateOpen(true)} className="px-6 py-3 bg-impr-orange text-white rounded-2xl font-black text-sm shadow-xl shadow-orange-500/20 hover:bg-orange-600 active:scale-95 transition-all flex items-center gap-2 italic">
+                                        <i data-lucide="plus" className="w-4 h-4"></i> 新增專案
+                                    </button>
+                                )}
+                            </div>
                         </header>
-                        <main className="flex-1 overflow-auto p-8">
-                             <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-bold text-slate-700">專案清單</h2>
-                                {user.role === 'admin' && <button onClick={()=>setIsCreateOpen(true)} className="px-5 py-2 bg-impr-orange text-white rounded-lg font-bold text-sm shadow hover:bg-orange-600">+ 新增專案</button>}
-                             </div>
-                             <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-                                <table className="w-full text-left text-sm">
-                                    <thead className="bg-slate-50 border-b text-slate-500">
-                                        <tr><th className="p-4">專案名稱</th><th className="p-4 text-center">狀態</th><th className="p-4">進度</th><th className="p-4 text-right">操作</th></tr>
-                                    </thead>
-                                    <tbody className="divide-y">
-                                        {activities.map(act => (
-                                            <tr key={act.id} className="hover:bg-slate-50">
-                                                <td className="p-4">
-                                                    <div className="font-bold text-slate-700">{act.name}</div>
-                                                    <div className="text-xs text-slate-400 mt-1">{act.clientName}</div>
-                                                </td>
-                                                <td className="p-4 text-center"><span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs font-bold border border-blue-100">{act.status}</span></td>
-                                                <td className="p-4"><div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-impr-orange" style={{width: `${progressData[act.id]?.progress || 0}%`}}></div></div></td>
-                                                <td className="p-4 text-right gap-2 flex justify-end">
-                                                    <button onClick={()=>setSelAct(act.id)} className="px-3 py-1 bg-white border rounded text-xs font-bold hover:bg-slate-50">明細</button>
-                                                    {user.role === 'admin' && <button onClick={()=>handleDelete(act.id)} className="p-1 text-red-400 hover:text-red-600"><i data-lucide="trash-2" className="w-4 h-4"></i></button>}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                             </div>
+
+                        <main className="flex-1 overflow-auto p-10 no-scrollbar">
+                            <div className="grid grid-cols-1 gap-6">
+                                {activities.map(act => (
+                                    <div key={act.id} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 flex flex-col md:flex-row md:items-center justify-between gap-8 group hover:border-impr-orange/30 transition-all">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black border border-blue-100 uppercase tracking-widest">{act.status}</span>
+                                            </div>
+                                            <h2 className="text-xl font-black text-slate-800 mb-1 tracking-tight group-hover:text-impr-orange transition-colors">{act.name}</h2>
+                                            <p className="text-xs font-bold text-slate-400 flex items-center gap-1.5"><i data-lucide="briefcase" className="w-3.5 h-3.5"></i> {act.clientName}</p>
+                                        </div>
+                                        <div className="flex items-center gap-8">
+                                            <div className="flex flex-col items-end gap-1.5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner border border-slate-200/50">
+                                                        <div className="h-full bg-impr-orange" style={{width: `${progressData[act.id]?.progress || 0}%`}}></div>
+                                                    </div>
+                                                    <span className="text-sm font-black text-slate-500 font-mono">{progressData[act.id]?.progress || 0}%</span>
+                                                </div>
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Current Status</span>
+                                            </div>
+                                            <button onClick={()=>setSelAct(act.id)} className="px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-xs font-black shadow-xl hover:bg-slate-700 active:scale-95 transition-all">進入明細管考</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </main>
                     </div>
+
                     {/* 新增專案 Modal */}
                     {isCreateOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-                            <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl">
+                            <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl animate-in zoom-in-95">
                                 <h3 className="font-bold text-lg mb-4">新增專案</h3>
                                 <input type="text" placeholder="客戶名稱" className="w-full mb-3 p-3 border rounded-lg" onChange={e=>setForm({...form, clientName: e.target.value})}/>
                                 <input type="text" placeholder="專案名稱" className="w-full mb-3 p-3 border rounded-lg" onChange={e=>setForm({...form, name: e.target.value})}/>
                                 <div className="flex gap-3 mb-6"><input type="date" className="w-1/2 p-3 border rounded-lg" onChange={e=>setForm({...form, startDate: e.target.value})}/><input type="date" className="w-1/2 p-3 border rounded-lg" onChange={e=>setForm({...form, endDate: e.target.value})}/></div>
-                                <div className="flex gap-3"><button onClick={()=>setIsCreateOpen(false)} className="flex-1 py-2 bg-slate-100 font-bold rounded-lg text-slate-500">取消</button><button onClick={handleCreate} disabled={loading} className="flex-1 py-2 bg-impr-orange text-white font-bold rounded-lg">{loading?"建立中...":"建立"}</button></div>
+                                <div className="flex gap-3"><button onClick={()=>setIsCreateOpen(false)} className="flex-1 py-2 bg-slate-100 font-bold rounded-lg text-slate-500 hover:bg-slate-200">取消</button><button onClick={handleCreate} disabled={loading} className="flex-1 py-2 bg-impr-orange text-white font-bold rounded-lg shadow-lg hover:bg-orange-600">{loading?"建立中...":"建立"}</button></div>
                             </div>
                         </div>
                     )}
+
+                    {/* 明細 Modal */}
                     {selAct && <DetailModal actId={selAct} onClose={()=>setSelAct(null)} progressData={progressData} onUpdate={handleUpdate} />}
                 </div>
             );
