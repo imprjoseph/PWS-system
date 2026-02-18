@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v5.0</title>
+    <title>IMPR 專案管考系統 - 企業版 v5.2</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -17,7 +17,8 @@
                         impr: { 
                             orange: '#F28C00', 
                             dark: '#0f172a', 
-                            slate: '#1e293b'
+                            slate: '#1e293b',
+                            danger: '#ef4444'
                         }
                     },
                     screens: {
@@ -64,11 +65,10 @@
         const { useState, useEffect, useMemo, useCallback } = React;
         
         const logoUrl = "logo.png";
-        const GAS_API_URL = ""; 
-
-        // --- 根據 PWS (1).xlsx 調整的任務範本 ---
         
-        // Survey Template (依據 SURVEY_TEMPLATE.csv 內容)
+        // --- 範本設定 (依據上傳的 PWS (1).xlsx 內容) ---
+        
+        // SURVEY_TEMPLATE.csv
         const SURVEY_TEMPLATE = [
             { code: '1', name: '基本場地條件' },
             { code: '1.1', name: '場地實際可使用空間' },
@@ -151,7 +151,7 @@
             { code: '11.6', name: '確認日照及風向' }
         ];
 
-        // Item Template (依據 ITEM_TEMPLATE.csv 內容)
+        // ITEM_TEMPLATE.csv
         const ITEM_TEMPLATE = [
             { code: '1', name: '專案統籌' },
             { code: '1.1', name: '專案時程規劃' },
@@ -297,22 +297,22 @@
         };
 
         const TeamManager = () => {
-            // 依據 LIST.csv 預設載入資料
+            // 依據 LIST.csv 預設載入資料 (joseph, Arlena)
             const [members, setMembers] = useState([
                 { id: 1, name: 'joseph', role: 'admin', email: '', phone: '' },
-                { id: 2, name: 'arlena', role: 'staff', email: '', phone: '' }
+                { id: 2, name: 'Arlena', role: 'staff', email: '', phone: '' }
             ]);
             const [isEditing, setIsEditing] = useState(false);
             const [editId, setEditId] = useState(null);
             const [formData, setFormData] = useState({ name: '', role: '', email: '', phone: '' });
 
             useEffect(() => {
-                const cached = localStorage.getItem('impr_team_v5'); // 使用 v5 確保清除舊資料
+                const cached = localStorage.getItem('impr_team_v5.2'); 
                 if (cached) setMembers(JSON.parse(cached));
             }, []);
 
             useEffect(() => {
-                localStorage.setItem('impr_team_v5', JSON.stringify(members));
+                localStorage.setItem('impr_team_v5.2', JSON.stringify(members));
             }, [members]);
 
             const handleSubmit = () => {
@@ -408,43 +408,62 @@
 
             if (parents.length === 0) return <div className="p-8 text-center text-slate-300 italic text-sm">暫無任務</div>;
 
+            // 檢查任務是否延遲 (未完成且過期)
+            const checkDelay = (task) => {
+                if (task.status < 100 && task.dueDate) {
+                    const due = new Date(task.dueDate);
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    return due < today;
+                }
+                return false;
+            };
+
             return (
                 <div className="space-y-4">
                     {parents.map(parent => {
                         const children = childrenMap[parent.code] || [];
                         const activeChildren = children.filter(c => c.isApplicable);
                         const progress = activeChildren.length > 0 ? Math.round(activeChildren.reduce((acc, curr) => acc + (Number(curr.status)||0), 0) / activeChildren.length) : (Number(parent.status) || 0);
+                        const isParentDelayed = checkDelay(parent);
+                        
                         return (
-                            <details key={parent.id} className="group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm" open>
+                            <details key={parent.id} className={`group bg-white border rounded-2xl overflow-hidden shadow-sm ${isParentDelayed ? 'border-impr-danger/50' : 'border-slate-200'}`} open>
                                 <summary className="flex items-center justify-between p-4 sm:p-5 bg-slate-50/50 hover:bg-slate-100 transition-colors select-none cursor-pointer">
-                                    <div className="flex items-center gap-3 sm:gap-4 overflow-hidden"><span className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-slate-800 text-white text-[10px] sm:text-xs font-mono font-bold rounded-lg shadow-sm">{parent.code}</span><span className="font-black text-slate-700 text-sm tracking-tight truncate">{parent.name}</span></div>
+                                    <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
+                                        <span className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-slate-800 text-white text-[10px] sm:text-xs font-mono font-bold rounded-lg shadow-sm">{parent.code}</span>
+                                        <span className="font-black text-slate-700 text-sm tracking-tight truncate">{parent.name}</span>
+                                        {isParentDelayed && <span className="text-[10px] font-bold text-white bg-impr-danger px-2 py-0.5 rounded-full">已延遲</span>}
+                                    </div>
                                     <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0"><div className="flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-white rounded-lg border border-slate-200"><div className="w-10 sm:w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-impr-orange" style={{width: `${progress}%`}}></div></div><span className="text-xs font-black text-impr-orange">{progress}%</span></div><i data-lucide="chevron-down" className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-open:rotate-180 transition-transform"></i></div>
                                 </summary>
                                 <div className="p-3 sm:p-4 space-y-3 bg-white">
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                                             <div className="md:col-span-2 relative"><i data-lucide="user" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.assignee} onBlur={(e) => onUpdate(parent.id, { assignee: e.target.value })} className="editable-field w-full bg-white pl-9 pr-2 py-2.5 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 outline-none" placeholder="總負責人" /></div>
-                                            <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className="editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-slate-500 border border-slate-200 outline-none" /></div>
+                                            <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className={`editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold border border-slate-200 outline-none ${isParentDelayed ? 'text-impr-danger' : 'text-slate-500'}`} /></div>
                                             <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200"><input type="range" min="0" max="100" step="10" defaultValue={parent.status} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" disabled={children.length > 0} /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span></div>
                                             <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.note} onBlur={(e) => onUpdate(parent.id, { note: e.target.value })} className="editable-field w-full bg-white pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-slate-200 outline-none" placeholder="備註..." /></div>
                                         </div>
                                     </div>
-                                    {children.map(child => (
-                                        <div key={child.id} className={`p-4 rounded-xl border transition-all ${child.isApplicable ? 'bg-white border-slate-100 hover:border-slate-300 shadow-sm' : 'bg-slate-50 border-transparent opacity-50'}`}>
+                                    {children.map(child => {
+                                        const isChildDelayed = checkDelay(child);
+                                        return (
+                                        <div key={child.id} className={`p-4 rounded-xl border transition-all ${child.isApplicable ? `bg-white hover:border-slate-300 shadow-sm ${isChildDelayed ? 'border-impr-danger/30 bg-red-50/10' : 'border-slate-100'}` : 'bg-slate-50 border-transparent opacity-50'}`}>
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                                                <div className="flex items-center gap-3"><span className="text-slate-400 font-mono text-xs font-bold w-8 text-right">{child.code}</span><span className={`font-bold text-sm ${child.isApplicable ? 'text-slate-700' : 'line-through text-slate-400'}`}>{child.name}</span></div>
+                                                <div className="flex items-center gap-3"><span className="text-slate-400 font-mono text-xs font-bold w-8 text-right">{child.code}</span><span className={`font-bold text-sm ${child.isApplicable ? 'text-slate-700' : 'line-through text-slate-400'}`}>{child.name}</span>{isChildDelayed && <span className="text-[9px] text-white bg-impr-danger px-1.5 py-0.5 rounded ml-2">延遲</span>}</div>
                                                 <button onClick={() => onUpdate(child.id, { isApplicable: !child.isApplicable })} className={`self-start sm:self-auto px-2 py-1 rounded text-[10px] font-bold border transition-colors ${child.isApplicable ? 'text-slate-400 border-slate-200' : 'bg-slate-600 text-white border-slate-600'}`}>{child.isApplicable ? "設為不適用" : "恢復適用"}</button>
                                             </div>
                                             {child.isApplicable && (
                                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pl-0 sm:pl-11">
                                                     <div className="md:col-span-2 relative"><i data-lucide="user" className="absolute left-3 top-3 w-3 h-3 text-slate-400"></i><input type="text" defaultValue={child.assignee} onBlur={(e) => onUpdate(child.id, { assignee: e.target.value })} className="editable-field w-full bg-slate-50 pl-8 pr-2 py-2 rounded-xl text-xs font-bold text-slate-600 border border-transparent outline-none" placeholder="負責人" /></div>
-                                                    <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className="editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold text-slate-500 border border-transparent outline-none" /></div>
-                                                    <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent"><input type="range" min="0" max="100" step="10" defaultValue={child.status} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{child.status}%</span></div>
+                                                    <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className={`editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold border border-transparent outline-none ${isChildDelayed ? 'text-impr-danger' : 'text-slate-500'}`} /></div>
+                                                    <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent"><input type="range" min="0" max="100" step="10" defaultValue={child.status} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className={`text-xs font-black w-8 text-right font-mono ${isChildDelayed ? 'text-impr-danger' : 'text-impr-orange'}`}>{child.status}%</span></div>
                                                     <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3 h-3 text-slate-300"></i><input type="text" defaultValue={child.note} onBlur={(e) => onUpdate(child.id, { note: e.target.value })} className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2 rounded-xl text-xs text-slate-600 border border-transparent outline-none" placeholder="備註..." /></div>
                                                 </div>
                                             )}
                                         </div>
-                                    ))}
+                                    )})}
                                 </div>
                             </details>
                         );
@@ -469,18 +488,18 @@
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
-            // 讀取/儲存 LocalStorage (Use v5 key to separate from previous sessions)
+            // 讀取/儲存 LocalStorage (Use v5.2 key)
             useEffect(() => {
                 if (user && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v5', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v5', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v5.2', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v5.2', JSON.stringify(tasks));
                 }
             }, [activities, tasks, user]);
 
             const fetchData = async (currUser) => {
                 setLoading(true);
-                const cachedActs = localStorage.getItem('impr_activities_v5');
-                const cachedTasks = localStorage.getItem('impr_tasks_v5');
+                const cachedActs = localStorage.getItem('impr_activities_v5.2');
+                const cachedTasks = localStorage.getItem('impr_tasks_v5.2');
 
                 if (cachedActs && cachedTasks) {
                     setActivities(JSON.parse(cachedActs));
@@ -488,7 +507,7 @@
                     setLoading(false);
                 } else {
                     setTimeout(() => {
-                        // 依據 ACTIVITY.csv 資料
+                        // ACTIVITY.csv
                         const defaultActs = [
                             { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '台北', status: '進行中' },
                             { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '高雄', status: '進行中' },
@@ -499,7 +518,8 @@
                         
                         let allTasks = [];
                         defaultActs.forEach(act => {
-                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
+                            // 設定一些假日期以測試延遲功能
+                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: '', dueDate: i < 3 ? '2024-01-01' : '', note: '' }));
                             ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
                         });
                         setTasks(allTasks);
@@ -530,7 +550,6 @@
                 const newActId = 'ACT-' + Date.now();
                 const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', location: form.location, status: '籌備中' };
                 
-                // 強制導入完整範本
                 let newTasks = [];
                 SURVEY_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_s_${i}`, activityId: newActId, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
                 ITEM_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_i_${i}`, activityId: newActId, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
