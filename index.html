@@ -30,6 +30,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap');
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        .company-logo { max-width: 220px; max-height: 80px; object-fit: contain; }
         
         /* 響應式側邊欄邏輯 */
         .sidebar-fixed { 
@@ -145,14 +146,25 @@
         const LoginPage = ({ onLogin, loading, error }) => {
             const [u, setU] = useState('admin');
             const [p, setP] = useState('');
+            const [imgError, setImgError] = useState(false);
+
             return (
                 <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 sm:p-6">
                     <div className="w-full max-w-sm bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl p-8 sm:p-10 text-center border border-slate-200">
                         <div className="flex justify-center mb-6">
-                            <div className="flex flex-col items-center">
-                                {IMPR_LOGO_SVG("w-14 h-14")}
-                                <span className="font-black text-2xl text-impr-orange mt-2 italic tracking-tighter">IMPR</span>
-                            </div>
+                            {!imgError ? (
+                                <img 
+                                    src={logoUrl} 
+                                    className="company-logo mx-auto" 
+                                    onError={() => setImgError(true)}
+                                    alt="IMPR Logo"
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center">
+                                    {IMPR_LOGO_SVG("w-14 h-14")}
+                                    <span className="font-black text-2xl text-impr-orange mt-2 italic tracking-tighter">IMPR</span>
+                                </div>
+                            )}
                         </div>
                         <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-8 tracking-tight italic">專案進度管考系統</h2>
                         <div className="space-y-3">
@@ -358,6 +370,7 @@
             const [form, setForm] = useState({ name: '', clientName: '', startDate: '', endDate: '', location: '' });
             const [viewTab, setViewTab] = useState('active'); 
             const [sidebarOpen, setSidebarOpen] = useState(false); 
+            const [sidebarImgError, setSidebarImgError] = useState(false); // Sidebar Logo Error State
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
@@ -539,8 +552,19 @@
                     {/* 側邊欄 (響應式) */}
                     <div className={`sidebar-fixed bg-impr-dark flex flex-col text-white shadow-2xl p-6 ${sidebarOpen ? 'sidebar-open' : ''}`}>
                         <div className="flex flex-col items-center mb-8 pt-4">
-                            <div className="flex flex-col items-center">
-                                {IMPR_LOGO_SVG("w-10 h-10")}
+                            {!sidebarImgError ? (
+                                <img 
+                                    src={logoUrl} 
+                                    className="h-12 mb-2 object-contain" 
+                                    onError={() => setSidebarImgError(true)}
+                                    alt="Sidebar Logo"
+                                />
+                            ) : (
+                                <div className="p-2 bg-white/10 rounded-xl border border-white/20 mb-2">
+                                    {IMPR_LOGO_SVG("w-8 h-8")}
+                                </div>
+                            )}
+                            <div className="text-center">
                                 <span className="font-black text-xl text-white mt-2 italic tracking-tighter">IMPR HUB</span>
                             </div>
                         </div>
