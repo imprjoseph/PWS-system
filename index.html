@@ -30,7 +30,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap');
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        .company-logo { max-width: 220px; max-height: 80px; object-fit: contain; }
         
         /* 響應式側邊欄邏輯 */
         .sidebar-fixed { 
@@ -62,6 +61,7 @@
         details > summary::-webkit-details-marker { display: none; }
         details[open] > summary { border-bottom: 1px solid #f1f5f9; }
         
+        /* 進度條樣式 */
         input[type=range] { -webkit-appearance: none; background: transparent; }
         input[type=range]::-webkit-slider-thumb { 
             -webkit-appearance: none; 
@@ -424,6 +424,7 @@
                 const newActId = 'a' + Date.now();
                 const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', location: form.location, status: '籌備中' };
                 
+                // 強制導入完整範本
                 const generateTasksFromTemplate = (template, type) => {
                     return template.map((t, index) => ({
                         id: `t_${newActId}_${type}_${index}`,
@@ -468,7 +469,14 @@
             const DetailModal = ({ actId }) => {
                 const data = useMemo(() => {
                     const actTasks = tasks.filter(t => t.activityId === actId);
-                    const prog = actTasks.length > 0 ? Math.round((actTasks.filter(c=>c.isApplicable && String(c.code).includes('.')).reduce((s,t)=>s+(Number(t.status)||0),0) / actTasks.filter(c=>c.isApplicable && String(c.code).includes('.')).length) || 0) : 0;
+                    const subTasks = actTasks.filter(c => c.isApplicable && String(c.code).includes('.'));
+                    
+                    let prog = 0;
+                    if (subTasks.length > 0) {
+                        const sum = subTasks.reduce((s, t) => s + (Number(t.status) || 0), 0);
+                        prog = Math.round(sum / subTasks.length);
+                    }
+                    
                     return { progress: prog, allTasks: actTasks };
                 }, [actId, tasks]);
 
@@ -608,10 +616,10 @@
                                             <div className="flex flex-col items-end gap-1 w-full sm:w-auto">
                                                 <div className="flex items-center gap-3 w-full sm:w-auto">
                                                     <div className="flex-1 sm:flex-none w-auto sm:w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-impr-orange" style={{width: `${(useMemo(()=>tasks.filter(t=>t.activityId===act.id && t.isApplicable && String(t.code).includes('.')).length>0?Math.round(tasks.filter(t=>t.activityId===act.id && t.isApplicable && String(t.code).includes('.')).reduce((s,t)=>s+(Number(t.status)||0),0)/tasks.filter(t=>t.activityId===act.id && t.isApplicable && String(t.code).includes('.')).length):0))}%`}}></div>
+                                                        <div className="h-full bg-impr-orange" style={{width: `${(useMemo(()=> { const sub = tasks.filter(t=>t.activityId===act.id && t.isApplicable && String(t.code).includes('.')); return sub.length > 0 ? Math.round(sub.reduce((s,t)=>s+(Number(t.status)||0),0)/sub.length) : 0; }, [act.id, tasks]))}%`}}></div>
                                                     </div>
                                                     <span className="text-sm font-black text-slate-500 font-mono">
-                                                        {useMemo(()=>tasks.filter(t=>t.activityId===act.id && t.isApplicable && String(t.code).includes('.')).length>0?Math.round(tasks.filter(t=>t.activityId===act.id && t.isApplicable && String(t.code).includes('.')).reduce((s,t)=>s+(Number(t.status)||0),0)/tasks.filter(t=>t.activityId===act.id && t.isApplicable && String(t.code).includes('.')).length):0}%
+                                                        {useMemo(()=> { const sub = tasks.filter(t=>t.activityId===act.id && t.isApplicable && String(t.code).includes('.')); return sub.length > 0 ? Math.round(sub.reduce((s,t)=>s+(Number(t.status)||0),0)/sub.length) : 0; }, [act.id, tasks])}%
                                                     </span>
                                                 </div>
                                             </div>
