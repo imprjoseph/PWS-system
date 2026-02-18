@@ -73,10 +73,10 @@
         const { useState, useEffect, useMemo, useCallback } = React;
         
         // --- 設定區 ---
-        const logoUrl = "logo.png"; // 請確認此路徑正確，或依賴下方的 SVG 備援
+        const logoUrl = "logo.png";
         const GAS_API_URL = ""; 
 
-        // 預設 Logo SVG (當圖片路徑失效時使用)
+        // 預設 Logo SVG
         const IMPR_LOGO_SVG = (className = "w-12 h-12") => (
             <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(242, 140, 0, 0.1)"/>
@@ -100,7 +100,7 @@
 
         // --- 子組件: 登入頁 ---
         const LoginPage = ({ onLogin, loading, error }) => {
-            const [u, setU] = useState('');
+            const [u, setU] = useState('admin');
             const [p, setP] = useState('');
             const [imgError, setImgError] = useState(false);
 
@@ -124,7 +124,7 @@
                         </div>
                         <h2 className="text-xl font-black text-slate-800 mb-8 tracking-tight italic">專案進度管考系統</h2>
                         <div className="space-y-3">
-                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="帳號" />
+                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="帳號 (admin)" />
                             <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="密碼" />
                         </div>
                         {error && <div className="text-red-500 text-xs font-bold mt-4">{error}</div>}
@@ -136,14 +136,12 @@
             );
         };
 
-        // --- 核心組件: 階層式任務列表 (支援直接編輯) ---
+        // --- 核心組件: 階層式任務列表 ---
         const TaskHierarchy = ({ tasks, onUpdate }) => {
-            // 資料處理：將任務分組為 父(無小數點) -> 子(有小數點)
             const { parents, childrenMap } = useMemo(() => {
                 const parents = [];
                 const childrenMap = {};
                 
-                // 排序邏輯：支援 1, 1.1, 1.2, 2, 2.1 ...
                 const sortedTasks = [...tasks].sort((a, b) => {
                     const partsA = String(a.code).split('.').map(Number);
                     const partsB = String(b.code).split('.').map(Number);
@@ -168,13 +166,12 @@
                 return { parents, childrenMap };
             }, [tasks]);
 
-            if (parents.length === 0) return <div className="p-8 text-center text-slate-300 italic">尚無任務資料</div>;
+            if (parents.length === 0) return <div className="p-8 text-center text-slate-300 italic">尚無此分類的任務資料</div>;
 
             return (
                 <div className="space-y-4">
                     {parents.map(parent => {
                         const children = childrenMap[parent.code] || [];
-                        // 計算父任務進度顯示 (僅供參考，實際以後端或前端即時計算為主)
                         const activeChildren = children.filter(c => c.isApplicable);
                         const progress = activeChildren.length > 0 
                             ? Math.round(activeChildren.reduce((acc, curr) => acc + (Number(curr.status)||0), 0) / activeChildren.length) 
@@ -199,10 +196,11 @@
                                 </summary>
                                 
                                 <div className="p-4 space-y-3 bg-white">
+                                    {children.length === 0 && (
+                                        <div className="text-center py-4 text-xs text-slate-300 italic">尚無子任務，請點擊上方新增</div>
+                                    )}
                                     {children.map(child => (
                                         <div key={child.id} className={`p-4 rounded-xl border transition-all ${child.isApplicable ? 'bg-white border-slate-100 hover:border-slate-300' : 'bg-slate-50 border-transparent opacity-50'}`}>
-                                            
-                                            {/* 第一行：標題與適用性切換 */}
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-slate-400 font-mono text-xs font-bold w-8">{child.code}</span>
@@ -215,12 +213,8 @@
                                                      </button>
                                                 </div>
                                             </div>
-
-                                            {/* 第二行：直接編輯欄位 (Direct Edit) */}
                                             {child.isApplicable && (
                                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                                                    
-                                                    {/* 負責人 (Assignee) */}
                                                     <div className="md:col-span-2">
                                                         <div className="relative group">
                                                             <i data-lucide="user" className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 group-focus-within:text-impr-orange"></i>
@@ -230,19 +224,14 @@
                                                                 placeholder="負責人" />
                                                         </div>
                                                     </div>
-
-                                                    {/* 期限 (Deadline) */}
                                                     <div className="md:col-span-2">
                                                         <input type="date" defaultValue={child.dueDate} 
                                                             onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })}
                                                             className="editable-field w-full bg-slate-50 px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-slate-500 border border-transparent outline-none" />
                                                     </div>
-
-                                                    {/* 進度 (Progress Slider) */}
                                                     <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent focus-within:bg-white focus-within:border-impr-orange transition-all">
                                                         <input type="range" min="0" max="100" step="10" defaultValue={child.status}
                                                             onChange={(e) => {
-                                                                // 即時更新顯示數值
                                                                 e.target.nextElementSibling.innerText = e.target.value + '%';
                                                             }}
                                                             onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })}
@@ -250,8 +239,6 @@
                                                             className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" />
                                                         <span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{child.status}%</span>
                                                     </div>
-
-                                                    {/* 說明 (Note) */}
                                                     <div className="md:col-span-5 relative group">
                                                         <i data-lucide="message-square" className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300 group-focus-within:text-impr-orange"></i>
                                                         <input type="text" defaultValue={child.note} 
@@ -271,11 +258,35 @@
             );
         };
 
-        const DetailModal = ({ actId, onClose, progressData, onUpdate }) => {
+        // --- 子組件: 明細 Modal (含新增任務) ---
+        const DetailModal = ({ actId, onClose, progressData, onUpdate, onCreateTask }) => {
             const data = progressData[actId];
+            const [showAddForm, setShowAddForm] = useState(false);
+            const [newTask, setNewTask] = useState({ type: 'SURVEY', level: 'child', parentId: '', name: '', code: '' });
+            
             if (!data) return null;
-            const surveyTasks = data.allTasks.filter(t => t.type?.toUpperCase() === 'SURVEY');
-            const itemTasks = data.allTasks.filter(t => t.type?.toUpperCase() === 'ITEM');
+
+            // 確保父子關係的顯示邏輯：找出所有的 Parents
+            const allParents = data.allTasks.filter(t => !String(t.code).includes('.'));
+            
+            // 根據 Parent 的 Type 進行分組，確保該 Parent 下的所有 Child 都會被顯示在該組
+            // 這裡邏輯改為：只要 Parent 是 SURVEY，它和它的所有 Children (不管 Type) 都顯示在 SURVEY 區
+            const getFamilyTasks = (type) => {
+                const parents = allParents.filter(t => t.type?.toUpperCase() === type);
+                const parentCodes = parents.map(p => String(p.code));
+                const children = data.allTasks.filter(t => String(t.code).includes('.') && parentCodes.includes(String(t.code).split('.')[0]));
+                return [...parents, ...children];
+            };
+
+            const surveyTasks = getFamilyTasks('SURVEY');
+            const itemTasks = getFamilyTasks('ITEM');
+
+            const handleAddTask = () => {
+                if(!newTask.name || !newTask.code) return alert("請輸入任務名稱與代碼");
+                onCreateTask(actId, newTask);
+                setShowAddForm(false);
+                setNewTask({ type: 'SURVEY', level: 'child', parentId: '', name: '', code: '' });
+            };
 
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
@@ -288,8 +299,46 @@
                                     <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold">目前累計總進度：<span className="text-impr-orange font-black text-sm">{data.progress}%</span></p>
                                 </div>
                             </div>
-                            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-slate-50 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"><i data-lucide="x" className="w-4 h-4"></i></button>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setShowAddForm(true)} className="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors flex items-center gap-2">
+                                    <i data-lucide="plus" className="w-3.5 h-3.5"></i> 新增任務
+                                </button>
+                                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-slate-50 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"><i data-lucide="x" className="w-4 h-4"></i></button>
+                            </div>
                         </div>
+
+                        {showAddForm && (
+                            <div className="px-8 py-4 bg-slate-50 border-b animate-in slide-in-from-top-2">
+                                <h4 className="text-xs font-bold text-slate-500 mb-3">快速新增任務</h4>
+                                <div className="flex flex-wrap gap-3 items-end">
+                                    <div className="w-32">
+                                        <label className="text-[10px] font-bold text-slate-400 block mb-1">類型</label>
+                                        <select className="w-full p-2 rounded-lg border text-xs font-bold" value={newTask.type} onChange={e=>setNewTask({...newTask, type: e.target.value})}>
+                                            <option value="SURVEY">場勘查核</option>
+                                            <option value="ITEM">專案籌備</option>
+                                        </select>
+                                    </div>
+                                    <div className="w-24">
+                                         <label className="text-[10px] font-bold text-slate-400 block mb-1">層級</label>
+                                         <select className="w-full p-2 rounded-lg border text-xs font-bold" value={newTask.level} onChange={e=>setNewTask({...newTask, level: e.target.value})}>
+                                            <option value="parent">主任務</option>
+                                            <option value="child">子任務</option>
+                                        </select>
+                                    </div>
+                                    <div className="w-24">
+                                        <label className="text-[10px] font-bold text-slate-400 block mb-1">代碼 (如 1.3)</label>
+                                        <input type="text" className="w-full p-2 rounded-lg border text-xs font-bold" placeholder="代碼" value={newTask.code} onChange={e=>setNewTask({...newTask, code: e.target.value})} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="text-[10px] font-bold text-slate-400 block mb-1">任務名稱</label>
+                                        <input type="text" className="w-full p-2 rounded-lg border text-xs font-bold" placeholder="請輸入任務名稱" value={newTask.name} onChange={e=>setNewTask({...newTask, name: e.target.value})} />
+                                    </div>
+                                    <button onClick={handleAddTask} className="px-4 py-2 bg-impr-orange text-white rounded-lg text-xs font-bold hover:bg-orange-600">確認新增</button>
+                                    <button onClick={() => setShowAddForm(false)} className="px-3 py-2 text-slate-400 text-xs hover:text-slate-600">取消</button>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30 no-scrollbar space-y-12">
                             <div>
                                 <h4 className="text-sm font-black text-slate-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 border-l-4 border-impr-orange pl-3">
@@ -343,17 +392,17 @@
             };
 
             const handleLogin = (u, p) => {
-                if(!u || !p) return setError('請輸入帳號密碼');
+                if(!u) return setError('請輸入帳號');
                 setLoading(true);
                 setTimeout(() => {
-                    const mockUser = { name: u, role: u === 'admin' ? 'admin' : 'staff' };
+                    // 預設將所有登入視為 admin 以方便您測試「新增專案」按鈕
+                    const mockUser = { name: u, role: 'admin' };
                     setUser(mockUser);
                     fetchData(mockUser);
                 }, 500);
             };
 
             const handleUpdate = async (tId, updates) => {
-                // 樂觀更新 (Optimistic UI Update)
                 setTasks(prev => prev.map(t => t.id === tId ? { ...t, ...updates } : t));
                 await callGAS({ action: 'updateTask', taskId: tId, ...updates });
             };
@@ -362,19 +411,44 @@
                 if(!form.name) return;
                 setLoading(true);
                 await callGAS({ action: 'createActivity', ...form, manager: user.name });
-                // 模擬新增成功
+                const newActId = 'a' + Date.now();
+                const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', status: '籌備中' };
+                
                 setTimeout(() => { 
-                    fetchData(user); 
+                    setActivities(prev => [newAct, ...prev]);
+                    // 預設加入幾個空任務
+                    setTasks(prev => [
+                        ...prev,
+                        { id: 't' + Date.now() + '1', activityId: newActId, code: 1, name: '初始規劃', type: 'SURVEY', isApplicable: true },
+                        { id: 't' + Date.now() + '2', activityId: newActId, code: 2, name: '執行籌備', type: 'ITEM', isApplicable: true }
+                    ]);
                     setIsCreateOpen(false); 
                     setForm({name:'',clientName:'',startDate:'',endDate:''}); 
-                }, 1000);
+                    setLoading(false);
+                }, 800);
+            };
+
+            const handleCreateTask = async (actId, taskData) => {
+                const newId = 't' + Date.now();
+                const newTask = {
+                    id: newId,
+                    activityId: actId,
+                    code: taskData.code,
+                    name: taskData.name,
+                    type: taskData.type,
+                    status: 0,
+                    isApplicable: true,
+                    assignee: '',
+                    note: ''
+                };
+                setTasks(prev => [...prev, newTask]);
+                await callGAS({ action: 'createTask', ...newTask });
             };
 
             const handleDelete = async (actId) => {
                 if(!confirm('確定刪除此專案？')) return;
                 setLoading(true);
                 await callGAS({ action: 'deleteActivity', activityId: actId });
-                // 模擬刪除
                 setActivities(prev => prev.filter(a => a.id !== actId));
                 setLoading(false);
             };
@@ -447,7 +521,9 @@
 
                         <main className="flex-1 overflow-auto p-10 no-scrollbar">
                             <div className="grid grid-cols-1 gap-6">
-                                {activities.map(act => (
+                                {activities.length === 0 ? (
+                                    <div className="text-center py-20 text-slate-400">尚無專案，請點擊右上角新增</div>
+                                ) : activities.map(act => (
                                     <div key={act.id} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 flex flex-col md:flex-row md:items-center justify-between gap-8 group hover:border-impr-orange/30 transition-all">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
@@ -488,7 +564,7 @@
                     )}
 
                     {/* 明細 Modal */}
-                    {selAct && <DetailModal actId={selAct} onClose={()=>setSelAct(null)} progressData={progressData} onUpdate={handleUpdate} />}
+                    {selAct && <DetailModal actId={selAct} onClose={()=>setSelAct(null)} progressData={progressData} onUpdate={handleUpdate} onCreateTask={handleCreateTask} />}
                 </div>
             );
         };
