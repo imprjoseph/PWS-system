@@ -424,7 +424,6 @@
                 const newActId = 'a' + Date.now();
                 const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', location: form.location, status: '籌備中' };
                 
-                // 強制導入完整範本
                 const generateTasksFromTemplate = (template, type) => {
                     return template.map((t, index) => ({
                         id: `t_${newActId}_${type}_${index}`,
@@ -464,6 +463,18 @@
                 await callGAS({ action: 'deleteActivity', activityId: actId });
                 setActivities(prev => prev.filter(a => a.id !== actId));
                 setLoading(false);
+            };
+
+            // Helper function to calculate progress without using Hooks inside loop
+            const getProgress = (actId) => {
+                const actTasks = tasks.filter(t => t.activityId === actId);
+                const subTasks = actTasks.filter(c => c.isApplicable && String(c.code).includes('.'));
+                
+                if (subTasks.length > 0) {
+                    const sum = subTasks.reduce((s, t) => s + (Number(t.status) || 0), 0);
+                    return Math.round(sum / subTasks.length);
+                }
+                return 0;
             };
 
             const DetailModal = ({ actId }) => {
@@ -616,10 +627,10 @@
                                             <div className="flex flex-col items-end gap-1 w-full sm:w-auto">
                                                 <div className="flex items-center gap-3 w-full sm:w-auto">
                                                     <div className="flex-1 sm:flex-none w-auto sm:w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-impr-orange" style={{width: `${(useMemo(()=> { const sub = tasks.filter(t=>t.activityId===act.id && t.isApplicable && String(t.code).includes('.')); return sub.length > 0 ? Math.round(sub.reduce((s,t)=>s+(Number(t.status)||0),0)/sub.length) : 0; }, [act.id, tasks]))}%`}}></div>
+                                                        <div className="h-full bg-impr-orange" style={{width: `${getProgress(act.id)}%`}}></div>
                                                     </div>
                                                     <span className="text-sm font-black text-slate-500 font-mono">
-                                                        {useMemo(()=> { const sub = tasks.filter(t=>t.activityId===act.id && t.isApplicable && String(t.code).includes('.')); return sub.length > 0 ? Math.round(sub.reduce((s,t)=>s+(Number(t.status)||0),0)/sub.length) : 0; }, [act.id, tasks])}%
+                                                        {getProgress(act.id)}%
                                                     </span>
                                                 </div>
                                             </div>
