@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版</title>
+    <title>IMPR 專案管考系統 - 企業版 v5.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -32,26 +32,12 @@
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .company-logo { max-width: 220px; max-height: 80px; object-fit: contain; }
         
-        /* 響應式側邊欄邏輯 */
-        .sidebar-fixed { 
-            width: 280px; 
-            flex-shrink: 0; 
-            transition: transform 0.3s ease-in-out;
-        }
+        .sidebar-fixed { width: 280px; flex-shrink: 0; transition: transform 0.3s ease-in-out; }
         
         @media (max-width: 768px) {
-            .sidebar-fixed {
-                position: fixed;
-                height: 100%;
-                z-index: 50;
-                transform: translateX(-100%);
-            }
-            .sidebar-open {
-                transform: translateX(0);
-            }
-            .content-area {
-                width: 100%;
-            }
+            .sidebar-fixed { position: fixed; height: 100%; z-index: 50; transform: translateX(-100%); }
+            .sidebar-open { transform: translateX(0); }
+            .content-area { width: 100%; }
         }
 
         .content-area { flex: 1; min-width: 0; }
@@ -61,33 +47,14 @@
         details > summary::-webkit-details-marker { display: none; }
         details[open] > summary { border-bottom: 1px solid #f1f5f9; }
         
-        /* 進度條樣式 */
         input[type=range] { -webkit-appearance: none; background: transparent; }
-        input[type=range]::-webkit-slider-thumb { 
-            -webkit-appearance: none; 
-            height: 18px; width: 18px; 
-            border-radius: 50%; 
-            background: #F28C00; 
-            margin-top: -7px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
-            border: 2px solid white;
-            transition: transform 0.1s;
-        }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #F28C00; margin-top: -7px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: 2px solid white; transition: transform 0.1s; }
         input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
-        input[type=range]::-webkit-slider-runnable-track { 
-            width: 100%; height: 4px; 
-            cursor: pointer; 
-            background: #e2e8f0; 
-            border-radius: 2px; 
-        }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #e2e8f0; border-radius: 2px; }
 
         .editable-field { transition: all 0.2s; }
         .editable-field:hover { background-color: #fff; border-color: #e2e8f0; }
-        .editable-field:focus {
-            background-color: white;
-            border-color: #F28C00;
-            box-shadow: 0 0 0 3px rgba(242, 140, 0, 0.1);
-        }
+        .editable-field:focus { background-color: white; border-color: #F28C00; box-shadow: 0 0 0 3px rgba(242, 140, 0, 0.1); }
     </style>
 </head>
 <body>
@@ -96,244 +63,194 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
         
-        // --- 設定區 ---
         const logoUrl = "logo.png";
         const GAS_API_URL = ""; 
 
-        // --- 任務範本設定 (Professional Expanded Templates - Full List) ---
+        // --- 根據 PWS (1).xlsx 調整的任務範本 ---
         
-        // 場勘查核 (11大類, 68細項)
+        // Survey Template (依據 SURVEY_TEMPLATE.csv 內容)
         const SURVEY_TEMPLATE = [
-            // 1. 場地基本條件
-            { code: '1', name: '場地基本條件 (Basic Info)' },
-            { code: '1.1', name: '場地長寬高尺寸精確測量' },
-            { code: '1.2', name: '舞台與背板搭建區域確認' },
-            { code: '1.3', name: '場地容納人數(站立/座位)確認' },
-            { code: '1.4', name: '地面材質與平整度檢查' },
-            { code: '1.5', name: '天花板懸吊點與載重限制' },
-            { code: '1.6', name: '場地現有損壞狀況紀錄(拍照存證)' },
-            
-            // 2. 進撤場動線
-            { code: '2', name: '進撤場動線 (Access & Loading)' },
-            { code: '2.1', name: '卸貨區位置與停車高度限制' },
-            { code: '2.2', name: '貨梯規格測量(門寬/內部深寬高/載重)' },
-            { code: '2.3', name: '卸貨區至會場動線距離與障礙物' },
-            { code: '2.4', name: '進場施工時間限制與規定' },
-            { code: '2.5', name: '撤場清運時間與垃圾處理規定' },
-            { code: '2.6', name: '大型道具搬運路徑模擬' },
-
-            // 3. 電力系統
-            { code: '3', name: '電力系統 (Power Supply)' },
-            { code: '3.1', name: '總電力負載(安培數)確認' },
-            { code: '3.2', name: '配電盤位置與接電方式(歐規/美規)' },
-            { code: '3.3', name: '臨時用電申請流程與費用' },
-            { code: '3.4', name: '發電機停放位置與拉線路徑' },
-            { code: '3.5', name: '牆面插座位置與電壓(110V/220V)' },
-            { code: '3.6', name: '電力技師窗口聯繫' },
-
-            // 4. 燈光音響視訊
-            { code: '4', name: '燈光音響視訊 (AV Systems)' },
-            { code: '4.1', name: '現場原有音響設備測試' },
-            { code: '4.2', name: '現場投影機/LED牆規格與訊號源' },
-            { code: '4.3', name: '燈光控制室位置與訊號線路徑' },
-            { code: '4.4', name: '音控台架設位置確認' },
-            { code: '4.5', name: '投影距離與布幕尺寸測量' },
-            { code: '4.6', name: '現場迴音與隔音狀況評估' },
-
-            // 5. 弱電與網路
-            { code: '5', name: '弱電與網路 (Network & Signals)' },
-            { code: '5.1', name: '現場Wi-Fi強度與頻寬測試' },
-            { code: '5.2', name: '各家電信(4G/5G)訊號強度實測' },
-            { code: '5.3', name: '實體網路線(LAN)插孔位置' },
-            { code: '5.4', name: '專線申請可行性評估' },
-            { code: '5.5', name: '直播訊號傳輸路徑測試' },
-
-            // 6. 消防與安全
-            { code: '6', name: '消防與安全 (Safety)' },
-            { code: '6.1', name: '緊急逃生出入口位置與標示' },
-            { code: '6.2', name: '滅火器與消防栓位置清點' },
-            { code: '6.3', name: '煙霧偵測器位置與靈敏度' },
-            { code: '6.4', name: '緊急醫療站設置空間' },
-            { code: '6.5', name: '保全/警衛配置點' },
-            { code: '6.6', name: 'AED設備位置確認' },
-
-            // 7. 附屬設施
-            { code: '7', name: '附屬設施 (Facilities)' },
-            { code: '7.1', name: '貴賓休息室(VIP Room)設備確認' },
-            { code: '7.2', name: '表演者梳化間位置與鏡台燈光' },
-            { code: '7.3', name: '工作人員休息/用餐區' },
-            { code: '7.4', name: '洗手間位置、數量與清潔度' },
-            { code: '7.5', name: '無障礙設施與動線確認' },
-            { code: '7.6', name: '吸菸區位置確認' },
-            { code: '7.7', name: '哺乳室/醫護室位置' },
-
-            // 8. 餐飲支援
-            { code: '8', name: '餐飲支援 (Catering Support)' },
-            { code: '8.1', name: '外燴備餐區(Pantry)位置' },
-            { code: '8.2', name: '用水來源(清洗/飲用)確認' },
-            { code: '8.3', name: '廚餘與垃圾處理動線' },
-            { code: '8.4', name: '餐飲用電需求確認' },
-            { code: '8.5', name: '送餐動線與時間規劃' },
-            { code: '8.6', name: '現場禁止飲食區域確認' },
-
-            // 9. 環境控制
-            { code: '9', name: '環境控制 (Environment)' },
-            { code: '9.1', name: '空調冷房能力與噪音測試' },
-            { code: '9.2', name: '空調出風口位置(是否直吹舞台)' },
-            { code: '9.3', name: '現場環境亮度與遮光需求' },
-            { code: '9.4', name: '周邊噪音干擾評估' },
-            { code: '9.5', name: '蚊蟲/異味狀況確認' },
-            { code: '9.6', name: '雨備場地確認(戶外活動專用)' },
-
-            // 10. 行政與標示
-            { code: '10', name: '行政與標示 (Signage & Admin)' },
-            { code: '10.1', name: '報到區動線與桌椅擺設' },
-            { code: '10.2', name: '場外指引立牌擺放點規劃' },
-            { code: '10.3', name: '大型輸出/旗幟懸掛點確認' },
-            { code: '10.4', name: '媒體接待區位置' },
-            { code: '10.5', name: '寄物區空間規劃' },
-            { code: '10.6', name: '問卷填寫/贈品兌換區' },
-
-            // 11. 法規與保險
-            { code: '11', name: '法規與保險 (Regulation)' },
-            { code: '11.1', name: '場地使用規範合約檢視' },
-            { code: '11.2', name: '裝修施工申請與押金' },
-            { code: '11.3', name: '公共意外責任險投保要求' },
-            { code: '11.4', name: '明火使用申請' },
-            { code: '11.5', name: '空拍機使用規範確認' },
-            { code: '11.6', name: '著作權/音樂公播權申請' },
-            { code: '11.7', name: '大型群聚活動申請(如適用)' }
+            { code: '1', name: '基本場地條件' },
+            { code: '1.1', name: '場地實際可使用空間' },
+            { code: '1.2', name: '天花板高度（影響背板、燈光、LED）' },
+            { code: '1.3', name: '柱子位置是否影響視線或動線' },
+            { code: '1.4', name: '地面材質（地毯／磁磚／草地／柏油）' },
+            { code: '1.5', name: '是否可釘、可貼、可吊掛' },
+            { code: '1.6', name: '是否有噪音或環境干擾（外部施工、車流）' },
+            { code: '2', name: '進出場與動線' },
+            { code: '2.1', name: '工作人員進場動線' },
+            { code: '2.2', name: '貴賓進場動線（是否與民眾分流）' },
+            { code: '2.3', name: '媒體進出動線' },
+            { code: '2.4', name: '與會者進出動線' },
+            { code: '2.5', name: '場地方指定出入口是否有管制' },
+            { code: '2.6', name: '是否有貨梯或後門可進大型設備' },
+            { code: '2.7', name: '進撤場時間是否足夠' },
+            { code: '3', name: '舞台與主要活動區' },
+            { code: '3.1', name: '舞台預定位置是否合理' },
+            { code: '3.2', name: '舞台尺寸是否符合活動需求' },
+            { code: '3.3', name: '舞台高度是否影響視線或拍攝' },
+            { code: '3.4', name: '舞台背板可視距離' },
+            { code: '3.5', name: '主持人、講者上下台動線' },
+            { code: '3.6', name: '是否有預留拍照點（大合照／啟動儀式）' },
+            { code: '4', name: 'AV 與技術條件' },
+            { code: '4.1', name: '現場可用電力（單相／三相）' },
+            { code: '4.2', name: '插座位置與數量' },
+            { code: '4.3', name: '是否需拉延長線（走線是否安全）' },
+            { code: '4.4', name: '音控、燈控、投影控台位置' },
+            { code: '4.5', name: 'LED／投影牆實際接頭位置' },
+            { code: '4.6', name: '現場光源是否影響投影' },
+            { code: '4.7', name: '音量限制與場地方規範' },
+            { code: '4.8', name: '網路來源（有線／無線／專線）' },
+            { code: '5', name: '報到與接待區' },
+            { code: '5.1', name: '報到桌可設置位置' },
+            { code: '5.2', name: '報到動線是否順暢' },
+            { code: '5.3', name: '是否有遮雨／遮陽空間' },
+            { code: '5.4', name: '報到區是否影響主要動線' },
+            { code: '5.5', name: '識別證、資料袋擺放空間' },
+            { code: '5.6', name: '是否可加設臨時補報區' },
+            { code: '5.7', name: '口譯設備放置區' },
+            { code: '6', name: '貴賓與後勤空間' },
+            { code: '6.1', name: '貴賓休息室是否可用' },
+            { code: '6.2', name: '工作人員置物空間' },
+            { code: '6.3', name: '行李暫放位置' },
+            { code: '6.4', name: '化妝室距離與動線' },
+            { code: '6.5', name: '無障礙設施是否齊備' },
+            { code: '7', name: '展攤／海報區（若有）' },
+            { code: '7.1', name: '展攤／海報可用空間尺寸' },
+            { code: '7.2', name: '攤位／海報動線是否順' },
+            { code: '7.3', name: '用電是否足夠' },
+            { code: '7.4', name: '夜間是否有人看管' },
+            { code: '7.5', name: '導覽是否有足夠停留空間' },
+            { code: '7.6', name: '展示區是否影響逃生動線' },
+            { code: '8', name: '安全與法規' },
+            { code: '8.1', name: '緊急出口位置與標示' },
+            { code: '8.2', name: '消防設備位置' },
+            { code: '8.3', name: '是否需報消防或場地方審查' },
+            { code: '8.4', name: '最大容納人數限制' },
+            { code: '8.5', name: '保全或場地方聯絡窗口' },
+            { code: '8.6', name: '緊急集合點位置' },
+            { code: '9', name: '天候與備援（戶外／半戶外必查）' },
+            { code: '9.1', name: '雨備空間是否可用' },
+            { code: '9.2', name: '強風影響（背板、帳棚）' },
+            { code: '9.3', name: '備援電源是否有' },
+            { code: '9.4', name: '天候不佳時活動調整彈性' },
+            { code: '10', name: '場地方溝通與限制條款' },
+            { code: '10.1', name: '場地方是否有指定合作廠商(如餐飲)' },
+            { code: '10.2', name: '是否限制音量、時間、布置方式' },
+            { code: '10.3', name: '是否限制拍攝或空拍' },
+            { code: '10.4', name: '是否限制飲食' },
+            { code: '10.5', name: '是否需繳交保證金' },
+            { code: '10.6', name: '是否需公部門合辦' },
+            { code: '10.7', name: '場地方當日值班窗口' },
+            { code: '11', name: '場勘後必產出文件' },
+            { code: '11.1', name: '場勘紀錄（文字＋照片）' },
+            { code: '11.2', name: '更新後平面配置圖' },
+            { code: '11.3', name: '場地風險清單' },
+            { code: '11.4', name: '對內提醒事項' },
+            { code: '11.5', name: '對客戶回報重點摘要' },
+            { code: '11.6', name: '確認日照及風向' }
         ];
 
-        // 專案籌備 (12大類, 84細項)
+        // Item Template (依據 ITEM_TEMPLATE.csv 內容)
         const ITEM_TEMPLATE = [
-            // 1. 專案管理
-            { code: '1', name: '專案管理與策略' },
-            { code: '1.1', name: '專案時程表(Gantt Chart)制定' },
-            { code: '1.2', name: '專案預算表編列與控管' },
-            { code: '1.3', name: '每週工作會議安排與記錄' },
-            { code: '1.4', name: '風險管理計畫與備案(Plan B)' },
-            { code: '1.5', name: '結案報告架構確認' },
-            { code: '1.6', name: '各組分工職掌表(R&R)建立' },
-
-            // 2. 視覺設計
-            { code: '2', name: '視覺設計 (Visual Design)' },
-            { code: '2.1', name: '主視覺 (KV) 概念提案' },
-            { code: '2.2', name: '主視覺定案與延伸應用規範' },
-            { code: '2.3', name: '舞台背板與兩側帆布設計' },
-            { code: '2.4', name: '拍照區/打卡點視覺設計' },
-            { code: '2.5', name: '邀請函(電子/紙本)設計' },
-            { code: '2.6', name: '識別證/名牌/桌牌設計' },
-            { code: '2.7', name: '簡報PPT模板設計' },
-            { code: '2.8', name: '指引立牌與動線標示設計' },
-            { code: '2.9', name: '活動手冊/議程表設計' },
-
-            // 3. 文案與內容
-            { code: '3', name: '文案與內容 (Content)' },
-            { code: '3.1', name: '活動Slogan與主題發想' },
-            { code: '3.2', name: '主持人講稿(Script)撰寫' },
-            { code: '3.3', name: '長官/貴賓致詞稿撰寫' },
-            { code: '3.4', name: '新聞稿(Press Release)撰寫' },
-            { code: '3.5', name: '活動宣傳文案(社群/EDM)' },
-            { code: '3.6', name: '細部流程表(Rundown)製作' },
-            { code: '3.7', name: '司儀稿(MC Script)撰寫' },
-
-            // 4. 多媒體製作
-            { code: '4', name: '多媒體製作 (Multimedia)' },
-            { code: '4.1', name: '暖場影片剪輯與製作' },
-            { code: '4.2', name: '開場動畫(Opening)製作' },
-            { code: '4.3', name: '過場/頒獎音樂音效挑選' },
-            { code: '4.4', name: '現場直播訊號測試與設定' },
-            { code: '4.5', name: '活動快剪快播需求確認' },
-            { code: '4.6', name: '啟動儀式特效動畫製作' },
-
-            // 5. 公關與邀請
-            { code: '5', name: '公關與邀請 (PR & RSVP)' },
-            { code: '5.1', name: '貴賓邀請名單整理' },
-            { code: '5.2', name: '邀請函寄送與電話追蹤' },
-            { code: '5.3', name: '出席回函(RSVP)統計' },
-            { code: '5.4', name: '座位表/分組名單安排' },
-            { code: '5.5', name: '媒體邀請與採訪通知' },
-            { code: '5.6', name: '媒體接待與新聞資料袋準備' },
-            { code: '5.7', name: '貴賓停車證/通行證寄送' },
-            { code: '5.8', name: '貴賓接送車輛安排' },
-
-            // 6. 場地與硬體
-            { code: '6', name: '場地與硬體 (Venue & HW)' },
-            { code: '6.1', name: '場地租借合約簽訂與付款' },
-            { code: '6.2', name: '舞台結構與Truss架設圖確認' },
-            { code: '6.3', name: '燈光設備清單(面光/電腦燈)確認' },
-            { code: '6.4', name: '音響設備清單(麥克風/喇叭)確認' },
-            { code: '6.5', name: '視訊設備(投影/LED)規格確認' },
-            { code: '6.6', name: '電力技師與發電機安排' },
-            { code: '6.7', name: '桌椅租賃與擺設圖確認' },
-            { code: '6.8', name: '無線電/耳麥通訊設備租借' },
-            { code: '6.9', name: '特效設備(乾冰/彩帶)安排' },
-
-            // 7. 佈置與道具
-            { code: '7', name: '佈置與道具 (Decor & Props)' },
-            { code: '7.1', name: '大圖輸出發包與施工' },
-            { code: '7.2', name: '花藝佈置/植栽租賃' },
-            { code: '7.3', name: '啟動儀式道具製作' },
-            { code: '7.4', name: '拍照手拿板/道具製作' },
-            { code: '7.5', name: '紅地毯/地貼鋪設' },
-            { code: '7.6', name: '氣球/特殊效果佈置' },
-            { code: '7.7', name: '入口拱門/充氣物製作' },
-
-            // 8. 餐飲服務
-            { code: '8', name: '餐飲服務 (Catering)' },
-            { code: '8.1', name: '外燴廠商詢價與試菜' },
-            { code: '8.2', name: '茶歇(Tea Break)點心確認' },
-            { code: '8.3', name: '素食/特殊飲食需求統計' },
-            { code: '8.4', name: '工作人員便當/飲料訂購' },
-            { code: '8.5', name: '晚宴酒水安排' },
-            { code: '8.6', name: '桌巾/椅套顏色確認' },
-            { code: '8.7', name: '餐桌名牌與菜單卡擺設' },
-
-            // 9. 演藝與人力
-            { code: '9', name: '演藝與人力 (Talent & HR)' },
-            { code: '9.1', name: '主持人敲定與合約簽署' },
-            { code: '9.2', name: '表演團體/樂團邀請' },
-            { code: '9.3', name: '禮儀小姐/接待人員招募' },
-            { code: '9.4', name: '工讀生/機動人員招募' },
-            { code: '9.5', name: '攝影師(平面/動態)發包' },
-            { code: '9.6', name: '工作人員職前訓練(Briefing)' },
-            { code: '9.7', name: '工作人員服裝統一確認' },
-            { code: '9.8', name: '造型師(妝髮)安排' },
-
-            // 10. 禮品與物資
-            { code: '10', name: '禮品與物資 (Gifts)' },
-            { code: '10.1', name: '貴賓伴手禮挑選與採購' },
-            { code: '10.2', name: '禮品包裝與提袋製作' },
-            { code: '10.3', name: '抽獎獎項採購與造冊' },
-            { code: '10.4', name: '文具/報到物資準備' },
-            { code: '10.5', name: '雨備物資(雨傘/雨衣)準備' },
-            { code: '10.6', name: '防疫物資(口罩/酒精)準備' },
-            { code: '10.7', name: '摸彩箱/抽獎券準備' },
-
-            // 11. 行政與保險
-            { code: '11', name: '行政與保險 (Admin)' },
-            { code: '11.1', name: '活動公共意外責任險投保' },
-            { code: '11.2', name: '工作人員短期意外險投保' },
-            { code: '11.3', name: '音樂公播權申請' },
-            { code: '11.4', name: '道路使用權/路權申請' },
-            { code: '11.5', name: '停車位預留與繳費' },
-            { code: '11.6', name: '各項合約用印與歸檔' },
-            { code: '11.7', name: '活動滿意度問卷設計' },
-
-            // 12. 結案與請款
-            { code: '12', name: '結案與請款 (Closing)' },
-            { code: '12.1', name: '活動照片/影片整理歸檔' },
-            { code: '12.2', name: '新聞露出監測報告(Clipping)' },
-            { code: '12.3', name: '結案報告書撰寫' },
-            { code: '12.4', name: '各項支出單據整理' },
-            { code: '12.5', name: '廠商請款與核銷' },
-            { code: '12.6', name: '客戶請款發票開立' },
-            { code: '12.7', name: '感謝函寄送' },
-            { code: '12.8', name: '專案檢討會議(Review Meeting)' }
+            { code: '1', name: '專案統籌' },
+            { code: '1.1', name: '專案時程規劃' },
+            { code: '1.2', name: '預算編列與控' },
+            { code: '1.3', name: '內部工作分工與窗口確認' },
+            { code: '1.4', name: '風險盤點與備援方案' },
+            { code: '1.5', name: '定期進度會議召開' },
+            { code: '2', name: '埸地作業' },
+            { code: '2.1', name: '場地評估與場勘' },
+            { code: '2.2', name: '檔期確認與租借合約' },
+            { code: '2.3', name: '平面圖確認（舞台、座位、動線）' },
+            { code: '2.4', name: '用電、網路、進出場時段確認' },
+            { code: '2.5', name: '場地方規範與限制確認' },
+            { code: '2.6', name: '公共意外險含食物中毒' },
+            { code: '3', name: '視覺設計與輸出物' },
+            { code: '3.1', name: '主視覺設計' },
+            { code: '3.2', name: '週邊設計' },
+            { code: '3.3', name: '輸出尺寸與材質確認' },
+            { code: '3.4', name: '校稿與最終檔確認' },
+            { code: '3.5', name: '舞台背板尺寸與固定方式' },
+            { code: '3.6', name: '出席名單最終版' },
+            { code: '4', name: 'AV 技術整合' },
+            { code: '4.1', name: '燈光配置（舞台／觀眾區）' },
+            { code: '4.2', name: '音響系統（麥克風數量、備品）' },
+            { code: '4.3', name: '投影／LED 規劃' },
+            { code: '4.4', name: '講者簡報測試' },
+            { code: '4.5', name: '直播／錄影（若有）' },
+            { code: '4.6', name: 'AI 字幕／口譯系統（若有）' },
+            { code: '4.7', name: '技術彩排' },
+            { code: '4.8', name: '網路申請及WIFI架設' },
+            { code: '5', name: '講者與貴賓接待' },
+            { code: '5.1', name: '講者名單確認' },
+            { code: '5.2', name: '講題與簡報規格溝通' },
+            { code: '5.3', name: '交通與住宿安排' },
+            { code: '5.4', name: '講者接送與陪同' },
+            { code: '5.5', name: '貴賓動線與座位安排' },
+            { code: '5.6', name: '唱名、致詞順序確認' },
+            { code: '5.7', name: 'CityTour規劃(若有)' },
+            { code: '6', name: '報到與現場接待' },
+            { code: '6.1', name: '報名系統／名單整理' },
+            { code: '6.2', name: '現場報到流程設計' },
+            { code: '6.3', name: '報到人力配置' },
+            { code: '6.4', name: '證件／資料袋準備' },
+            { code: '6.5', name: '現場諮詢窗口安排' },
+            { code: '6.6', name: '臨時名單與補報處理' },
+            { code: '6.7', name: '伴手禮準備(若有)' },
+            { code: '7', name: '現場佈置與撤場規劃' },
+            { code: '7.1', name: '舞台搭設' },
+            { code: '7.2', name: '背板與輸出物安裝' },
+            { code: '7.3', name: '桌椅與動線配置' },
+            { code: '7.4', name: '報到區／展示區設置' },
+            { code: '7.5', name: '現場指引標示' },
+            { code: '7.6', name: '撤場與復原' },
+            { code: '7.7', name: '表演團體確認' },
+            { code: '7.8', name: '桌花預定' },
+            { code: '8', name: '主持與流程控管' },
+            { code: '8.1', name: '主持人腳本撰寫' },
+            { code: '8.2', name: '議程時間控管' },
+            { code: '8.3', name: '上下場銜接' },
+            { code: '8.4', name: '臨時變動應變' },
+            { code: '8.5', name: '講者超時處理' },
+            { code: '8.6', name: '休息時間調整' },
+            { code: '8.7', name: '主持人人選確認' },
+            { code: '9', name: '媒體與紀錄' },
+            { code: '9.1', name: '媒體邀請與名單' },
+            { code: '9.2', name: '新聞稿（前／後）' },
+            { code: '9.3', name: '現場拍照與錄影' },
+            { code: '9.4', name: '影像整理與交付' },
+            { code: '9.5', name: '活動成果紀錄' },
+            { code: '9.6', name: '結案資料彙整' },
+            { code: '10', name: '會後結案與檢討' },
+            { code: '10.1', name: '成果報告' },
+            { code: '10.2', name: '照片與影片整理' },
+            { code: '10.3', name: '問卷回收與分析' },
+            { code: '10.4', name: '客戶回饋整理' },
+            { code: '10.5', name: '內部復盤會議' },
+            { code: '10.6', name: '文件歸檔' },
+            { code: '11', name: '論文海報區規劃' },
+            { code: '11.1', name: '海報數量與尺寸規範' },
+            { code: '11.2', name: '訂定海報展示形式（背板／海報架／牆面）' },
+            { code: '11.3', name: '展示區動線與區位規劃' },
+            { code: '11.4', name: '論文發表者名單彙整' },
+            { code: '11.5', name: '編號與張貼位置對應表' },
+            { code: '11.6', name: '動線與停留空間規劃' },
+            { code: '11.7', name: '張貼與撤場時間規劃' },
+            { code: '11.8', name: '現場人力協助（張貼、詢問）' },
+            { code: '11.9', name: '海報遺失／未到處理機制' },
+            { code: '12', name: '展攤／展示區管理' },
+            { code: '12.1', name: '展攤形式與數量規劃（標準攤／客製攤）' },
+            { code: '12.2', name: '攤位配置與平面圖規劃' },
+            { code: '12.3', name: '攤商／單位名單確認' },
+            { code: '12.4', name: '攤商進撤場時程安排及通知' },
+            { code: '12.5', name: '用電、網路、設備需求彙整' },
+            { code: '12.6', name: '攤商規範與注意事項彙整' },
+            { code: '12.7', name: '攤位編號與指示系統' },
+            { code: '12.8', name: '現場管理窗口與聯繫機制' },
+            { code: '12.9', name: '攤商收費系統(若有)' }
         ];
 
-        // Logo SVG
         const IMPR_LOGO_SVG = (className = "w-12 h-12") => (
             <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(242, 140, 0, 0.1)"/>
@@ -342,143 +259,123 @@
             </svg>
         );
 
-        const callGAS = async (payload) => {
-            console.log("模擬 API:", payload);
-            return { status: 'success' };
-        };
+        const callGAS = async (payload) => { console.log("模擬 API:", payload); return { status: 'success' }; };
 
-        // --- 元件: 登入頁 ---
         const LoginPage = ({ onLogin, loading, error }) => {
-            const [u, setU] = useState('admin');
+            const [u, setU] = useState('joseph');
             const [p, setP] = useState('');
             const [imgError, setImgError] = useState(false);
-
             return (
                 <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 sm:p-6">
                     <div className="w-full max-w-sm bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl p-8 sm:p-10 text-center border border-slate-200 animate-in zoom-in-95 duration-500">
                         <div className="flex justify-center mb-6">
-                            {!imgError ? (
-                                <img 
-                                    src={logoUrl} 
-                                    className="company-logo mx-auto" 
-                                    onError={() => setImgError(true)}
-                                    alt="IMPR Logo"
-                                />
-                            ) : (
-                                <div className="flex flex-col items-center">
-                                    {IMPR_LOGO_SVG("w-14 h-14")}
-                                    <span className="font-black text-2xl text-impr-orange mt-2 italic tracking-tighter">IMPR</span>
-                                </div>
-                            )}
+                            {!imgError ? <img src={logoUrl} className="company-logo mx-auto" onError={() => setImgError(true)} alt="IMPR Logo" /> : <div className="flex flex-col items-center">{IMPR_LOGO_SVG("w-14 h-14")}<span className="font-black text-2xl text-impr-orange mt-2 italic tracking-tighter">IMPR</span></div>}
                         </div>
                         <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-8 tracking-tight italic">專案進度管考系統</h2>
                         <div className="space-y-3">
-                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="帳號 (admin)" />
+                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="帳號 (joseph)" />
                             <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="密碼" />
                         </div>
                         {error && <div className="text-red-500 text-xs font-bold mt-4">{error}</div>}
-                        <button onClick={() => onLogin(u, p)} disabled={loading} className="w-full mt-8 py-3.5 sm:py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 transition-all shadow-lg active:scale-95">
-                            {loading ? "連線中..." : "登入系統"}
-                        </button>
+                        <button onClick={() => onLogin(u, p)} disabled={loading} className="w-full mt-8 py-3.5 sm:py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 transition-all shadow-lg active:scale-95">{loading ? "連線中..." : "登入系統"}</button>
                     </div>
                 </div>
             );
         };
 
-        // --- 元件: 統計儀表板 ---
         const DashboardStats = ({ activities }) => {
             const total = activities.length;
             const ongoing = activities.filter(a => !['已完工', '結案'].includes(a.status)).length;
             const completed = activities.filter(a => ['已完工', '結案'].includes(a.status)).length;
-            
             return (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 sm:mb-8">
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                        <div className="p-3 bg-blue-50 rounded-xl text-blue-600"><i data-lucide="folder-open" className="w-5 h-5"></i></div>
-                        <div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">總專案數</p>
-                            <p className="text-xl sm:text-2xl font-black text-slate-800">{total}</p>
-                        </div>
-                    </div>
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                        <div className="p-3 bg-impr-orange/10 rounded-xl text-impr-orange"><i data-lucide="activity" className="w-5 h-5"></i></div>
-                        <div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">執行中</p>
-                            <p className="text-xl sm:text-2xl font-black text-slate-800">{ongoing}</p>
-                        </div>
-                    </div>
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                        <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600"><i data-lucide="check-circle-2" className="w-5 h-5"></i></div>
-                        <div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">已完工</p>
-                            <p className="text-xl sm:text-2xl font-black text-slate-800">{completed}</p>
-                        </div>
-                    </div>
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4"><div className="p-3 bg-blue-50 rounded-xl text-blue-600"><i data-lucide="folder-open" className="w-5 h-5"></i></div><div><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">總專案數</p><p className="text-xl sm:text-2xl font-black text-slate-800">{total}</p></div></div>
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4"><div className="p-3 bg-impr-orange/10 rounded-xl text-impr-orange"><i data-lucide="activity" className="w-5 h-5"></i></div><div><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">執行中</p><p className="text-xl sm:text-2xl font-black text-slate-800">{ongoing}</p></div></div>
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4"><div className="p-3 bg-emerald-50 rounded-xl text-emerald-600"><i data-lucide="check-circle-2" className="w-5 h-5"></i></div><div><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">已完工</p><p className="text-xl sm:text-2xl font-black text-slate-800">{completed}</p></div></div>
                 </div>
             );
         };
 
-        // --- 元件: 團隊管理 (Team Management) ---
         const TeamManager = () => {
+            // 依據 LIST.csv 預設載入資料
             const [members, setMembers] = useState([
-                { id: 1, name: '王小明', role: '專案經理', email: 'wang@impr.com', phone: '0912-345-678' },
-                { id: 2, name: '陳美麗', role: '視覺設計', email: 'chen@impr.com', phone: '0922-333-444' },
-                { id: 3, name: '林志豪', role: '活動企劃', email: 'lin@impr.com', phone: '0933-555-666' }
+                { id: 1, name: 'joseph', role: 'admin', email: '', phone: '' },
+                { id: 2, name: 'arlena', role: 'staff', email: '', phone: '' }
             ]);
-            const [isAdding, setIsAdding] = useState(false);
-            const [newMember, setNewMember] = useState({ name: '', role: '', email: '', phone: '' });
+            const [isEditing, setIsEditing] = useState(false);
+            const [editId, setEditId] = useState(null);
+            const [formData, setFormData] = useState({ name: '', role: '', email: '', phone: '' });
 
-            const handleAdd = () => {
-                if(!newMember.name) return alert('請輸入姓名');
-                setMembers([...members, { id: Date.now(), ...newMember }]);
-                setIsAdding(false);
-                setNewMember({ name: '', role: '', email: '', phone: '' });
+            useEffect(() => {
+                const cached = localStorage.getItem('impr_team_v5'); // 使用 v5 確保清除舊資料
+                if (cached) setMembers(JSON.parse(cached));
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem('impr_team_v5', JSON.stringify(members));
+            }, [members]);
+
+            const handleSubmit = () => {
+                if(!formData.name) return alert('請輸入姓名');
+                if (editId) {
+                    setMembers(prev => prev.map(m => m.id === editId ? { ...m, ...formData } : m));
+                } else {
+                    const newMember = { id: Date.now(), ...formData };
+                    setMembers(prev => [...prev, newMember]);
+                }
+                resetForm();
+            };
+
+            const handleEdit = (member) => {
+                setFormData({ name: member.name, role: member.role, email: member.email, phone: member.phone });
+                setEditId(member.id);
+                setIsEditing(true);
             };
 
             const handleDelete = (id) => {
                 if(confirm('確定刪除此成員？')) {
-                    setMembers(members.filter(m => m.id !== id));
+                    setMembers(prev => prev.filter(m => m.id !== id));
                 }
+            };
+
+            const resetForm = () => {
+                setFormData({ name: '', role: '', email: '', phone: '' });
+                setEditId(null);
+                setIsEditing(false);
             };
 
             return (
                 <div className="space-y-6">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-black text-slate-800">團隊成員列表</h2>
-                        <button onClick={() => setIsAdding(true)} className="px-4 py-2 bg-impr-orange text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-orange-600 transition-colors">
-                            <i data-lucide="user-plus" className="w-4 h-4"></i> 新增成員
-                        </button>
+                        <h2 className="text-xl font-black text-slate-800">團隊成員管理</h2>
+                        <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-impr-orange text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-orange-600 transition-colors"><i data-lucide="user-plus" className="w-4 h-4"></i> 新增成員</button>
                     </div>
-
-                    {isAdding && (
+                    {isEditing && (
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 animate-in slide-in-from-top-2">
-                            <h3 className="font-bold text-slate-700 mb-4">新增團隊成員</h3>
+                            <h3 className="font-bold text-slate-700 mb-4">{editId ? '編輯成員資料' : '新增團隊成員'}</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                                <input type="text" placeholder="姓名" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={newMember.name} onChange={e=>setNewMember({...newMember, name: e.target.value})} />
-                                <input type="text" placeholder="職稱" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={newMember.role} onChange={e=>setNewMember({...newMember, role: e.target.value})} />
-                                <input type="email" placeholder="Email" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={newMember.email} onChange={e=>setNewMember({...newMember, email: e.target.value})} />
-                                <input type="text" placeholder="電話" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={newMember.phone} onChange={e=>setNewMember({...newMember, phone: e.target.value})} />
+                                <input type="text" placeholder="姓名" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} />
+                                <input type="text" placeholder="職稱 (admin/staff)" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.role} onChange={e=>setFormData({...formData, role: e.target.value})} />
+                                <input type="email" placeholder="Email" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} />
+                                <input type="text" placeholder="電話" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.phone} onChange={e=>setFormData({...formData, phone: e.target.value})} />
                             </div>
                             <div className="flex gap-3">
-                                <button onClick={handleAdd} className="px-6 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700">確認新增</button>
-                                <button onClick={() => setIsAdding(false)} className="px-6 py-2 bg-slate-100 text-slate-500 rounded-xl text-sm font-bold hover:bg-slate-200">取消</button>
+                                <button onClick={handleSubmit} className="px-6 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700">確認{editId ? '變更' : '新增'}</button>
+                                <button onClick={resetForm} className="px-6 py-2 bg-slate-100 text-slate-500 rounded-xl text-sm font-bold hover:bg-slate-200">取消</button>
                             </div>
                         </div>
                     )}
-
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {members.map(m => (
                             <div key={m.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-impr-orange/30 transition-all">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">{m.name[0]}</div>
-                                    <div>
-                                        <p className="font-bold text-slate-800">{m.name}</p>
-                                        <p className="text-xs text-slate-400">{m.role}</p>
-                                    </div>
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">{m.name[0].toUpperCase()}</div>
+                                    <div><p className="font-bold text-slate-800">{m.name}</p><p className="text-xs text-slate-400">{m.role}</p></div>
                                 </div>
-                                <button onClick={() => handleDelete(m.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                                    <i data-lucide="trash-2" className="w-4 h-4"></i>
-                                </button>
+                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => handleEdit(m)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><i data-lucide="edit-2" className="w-4 h-4"></i></button>
+                                    <button onClick={() => handleDelete(m.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><i data-lucide="trash-2" className="w-4 h-4"></i></button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -486,22 +383,17 @@
             );
         };
 
-        // --- 元件: 任務階層列表 ---
         const TaskHierarchy = ({ tasks, onUpdate }) => {
             const { parents, childrenMap } = useMemo(() => {
                 const parents = [];
                 const childrenMap = {};
                 const allCodes = new Set(tasks.map(t => String(t.code)));
-                
                 const sortedTasks = [...tasks].sort((a, b) => {
                     const pa = String(a.code).split('.').map(Number);
                     const pb = String(b.code).split('.').map(Number);
-                    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-                        if ((pa[i]||0) !== (pb[i]||0)) return (pa[i]||0) - (pb[i]||0);
-                    }
+                    for (let i = 0; i < Math.max(pa.length, pb.length); i++) { if ((pa[i]||0) !== (pb[i]||0)) return (pa[i]||0) - (pb[i]||0); }
                     return 0;
                 });
-
                 sortedTasks.forEach(t => {
                     const codeStr = String(t.code);
                     const isChild = codeStr.includes('.');
@@ -509,9 +401,7 @@
                     if (isChild && allCodes.has(pCode)) {
                         if (!childrenMap[pCode]) childrenMap[pCode] = [];
                         childrenMap[pCode].push(t);
-                    } else {
-                        parents.push(t);
-                    }
+                    } else { parents.push(t); }
                 });
                 return { parents, childrenMap };
             }, [tasks]);
@@ -523,104 +413,38 @@
                     {parents.map(parent => {
                         const children = childrenMap[parent.code] || [];
                         const activeChildren = children.filter(c => c.isApplicable);
-                        const progress = activeChildren.length > 0 
-                            ? Math.round(activeChildren.reduce((acc, curr) => acc + (Number(curr.status)||0), 0) / activeChildren.length) 
-                            : (Number(parent.status) || 0);
-
+                        const progress = activeChildren.length > 0 ? Math.round(activeChildren.reduce((acc, curr) => acc + (Number(curr.status)||0), 0) / activeChildren.length) : (Number(parent.status) || 0);
                         return (
                             <details key={parent.id} className="group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm" open>
                                 <summary className="flex items-center justify-between p-4 sm:p-5 bg-slate-50/50 hover:bg-slate-100 transition-colors select-none cursor-pointer">
-                                    <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                                        <span className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-slate-800 text-white text-[10px] sm:text-xs font-mono font-bold rounded-lg shadow-sm">{parent.code}</span>
-                                        <span className="font-black text-slate-700 text-sm tracking-tight truncate">{parent.name}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-                                        <div className="flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-white rounded-lg border border-slate-200">
-                                            <div className="w-10 sm:w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                <div className="h-full bg-impr-orange" style={{width: `${progress}%`}}></div>
-                                            </div>
-                                            <span className="text-xs font-black text-impr-orange">{progress}%</span>
-                                        </div>
-                                        <i data-lucide="chevron-down" className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-open:rotate-180 transition-transform"></i>
-                                    </div>
+                                    <div className="flex items-center gap-3 sm:gap-4 overflow-hidden"><span className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-slate-800 text-white text-[10px] sm:text-xs font-mono font-bold rounded-lg shadow-sm">{parent.code}</span><span className="font-black text-slate-700 text-sm tracking-tight truncate">{parent.name}</span></div>
+                                    <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0"><div className="flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-white rounded-lg border border-slate-200"><div className="w-10 sm:w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-impr-orange" style={{width: `${progress}%`}}></div></div><span className="text-xs font-black text-impr-orange">{progress}%</span></div><i data-lucide="chevron-down" className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-open:rotate-180 transition-transform"></i></div>
                                 </summary>
-                                
                                 <div className="p-3 sm:p-4 space-y-3 bg-white">
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="w-1 h-3 bg-slate-400 rounded-full"></span>
-                                            <div className="text-[10px] sm:text-xs text-slate-500 font-bold">主任務管理：</div>
-                                        </div>
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                                            <div className="md:col-span-2 relative">
-                                                <i data-lucide="user" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i>
-                                                <input type="text" defaultValue={parent.assignee} onBlur={(e) => onUpdate(parent.id, { assignee: e.target.value })}
-                                                    className="editable-field w-full bg-white pl-9 pr-2 py-2.5 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 outline-none" placeholder="總負責人" />
-                                            </div>
-                                            <div className="md:col-span-2">
-                                                <input type="date" defaultValue={parent.dueDate} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })}
-                                                    className="editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-slate-500 border border-slate-200 outline-none" />
-                                            </div>
-                                            <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200">
-                                                <input type="range" min="0" max="100" step="10" defaultValue={parent.status}
-                                                    onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }}
-                                                    onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })}
-                                                    onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })}
-                                                    className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" disabled={children.length > 0} />
-                                                <span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span>
-                                            </div>
-                                            <div className="md:col-span-5 relative">
-                                                <i data-lucide="message-square" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i>
-                                                <input type="text" defaultValue={parent.note} onBlur={(e) => onUpdate(parent.id, { note: e.target.value })}
-                                                    className="editable-field w-full bg-white pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-slate-200 outline-none" placeholder="備註..." />
-                                            </div>
+                                            <div className="md:col-span-2 relative"><i data-lucide="user" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.assignee} onBlur={(e) => onUpdate(parent.id, { assignee: e.target.value })} className="editable-field w-full bg-white pl-9 pr-2 py-2.5 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 outline-none" placeholder="總負責人" /></div>
+                                            <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className="editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold text-slate-500 border border-slate-200 outline-none" /></div>
+                                            <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200"><input type="range" min="0" max="100" step="10" defaultValue={parent.status} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" disabled={children.length > 0} /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span></div>
+                                            <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.note} onBlur={(e) => onUpdate(parent.id, { note: e.target.value })} className="editable-field w-full bg-white pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-slate-200 outline-none" placeholder="備註..." /></div>
                                         </div>
                                     </div>
-
-                                    {children.length > 0 && (
-                                        <div className="pl-2 sm:pl-4 border-l-2 border-slate-100 space-y-3">
-                                            {children.map(child => (
-                                                <div key={child.id} className={`p-4 rounded-xl border transition-all ${child.isApplicable ? 'bg-white border-slate-100 hover:border-slate-300 shadow-sm' : 'bg-slate-50 border-transparent opacity-50'}`}>
-                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="text-slate-400 font-mono text-xs font-bold w-8 text-right">{child.code}</span>
-                                                            <span className={`font-bold text-sm ${child.isApplicable ? 'text-slate-700' : 'line-through text-slate-400'}`}>{child.name}</span>
-                                                        </div>
-                                                        <button onClick={() => onUpdate(child.id, { isApplicable: !child.isApplicable })} 
-                                                            className={`self-start sm:self-auto px-2 py-1 rounded text-[10px] font-bold border transition-colors ${child.isApplicable ? 'text-slate-400 border-slate-200' : 'bg-slate-600 text-white border-slate-600'}`}>
-                                                            {child.isApplicable ? "設為不適用" : "恢復適用"}
-                                                        </button>
-                                                    </div>
-                                                    {child.isApplicable && (
-                                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pl-0 sm:pl-11">
-                                                            <div className="md:col-span-2 relative">
-                                                                <i data-lucide="user" className="absolute left-3 top-3 w-3 h-3 text-slate-400"></i>
-                                                                <input type="text" defaultValue={child.assignee} onBlur={(e) => onUpdate(child.id, { assignee: e.target.value })}
-                                                                    className="editable-field w-full bg-slate-50 pl-8 pr-2 py-2 rounded-xl text-xs font-bold text-slate-600 border border-transparent outline-none" placeholder="負責人" />
-                                                            </div>
-                                                            <div className="md:col-span-2">
-                                                                <input type="date" defaultValue={child.dueDate} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })}
-                                                                    className="editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold text-slate-500 border border-transparent outline-none" />
-                                                            </div>
-                                                            <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent">
-                                                                <input type="range" min="0" max="100" step="10" defaultValue={child.status}
-                                                                    onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }}
-                                                                    onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })}
-                                                                    onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })}
-                                                                    className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" />
-                                                                <span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{child.status}%</span>
-                                                            </div>
-                                                            <div className="md:col-span-5 relative">
-                                                                <i data-lucide="message-square" className="absolute left-3 top-3 w-3 h-3 text-slate-300"></i>
-                                                                <input type="text" defaultValue={child.note} onBlur={(e) => onUpdate(child.id, { note: e.target.value })}
-                                                                    className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2 rounded-xl text-xs text-slate-600 border border-transparent outline-none" placeholder="備註..." />
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                    {children.map(child => (
+                                        <div key={child.id} className={`p-4 rounded-xl border transition-all ${child.isApplicable ? 'bg-white border-slate-100 hover:border-slate-300 shadow-sm' : 'bg-slate-50 border-transparent opacity-50'}`}>
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                                                <div className="flex items-center gap-3"><span className="text-slate-400 font-mono text-xs font-bold w-8 text-right">{child.code}</span><span className={`font-bold text-sm ${child.isApplicable ? 'text-slate-700' : 'line-through text-slate-400'}`}>{child.name}</span></div>
+                                                <button onClick={() => onUpdate(child.id, { isApplicable: !child.isApplicable })} className={`self-start sm:self-auto px-2 py-1 rounded text-[10px] font-bold border transition-colors ${child.isApplicable ? 'text-slate-400 border-slate-200' : 'bg-slate-600 text-white border-slate-600'}`}>{child.isApplicable ? "設為不適用" : "恢復適用"}</button>
+                                            </div>
+                                            {child.isApplicable && (
+                                                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pl-0 sm:pl-11">
+                                                    <div className="md:col-span-2 relative"><i data-lucide="user" className="absolute left-3 top-3 w-3 h-3 text-slate-400"></i><input type="text" defaultValue={child.assignee} onBlur={(e) => onUpdate(child.id, { assignee: e.target.value })} className="editable-field w-full bg-slate-50 pl-8 pr-2 py-2 rounded-xl text-xs font-bold text-slate-600 border border-transparent outline-none" placeholder="負責人" /></div>
+                                                    <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className="editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold text-slate-500 border border-transparent outline-none" /></div>
+                                                    <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent"><input type="range" min="0" max="100" step="10" defaultValue={child.status} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{child.status}%</span></div>
+                                                    <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3 h-3 text-slate-300"></i><input type="text" defaultValue={child.note} onBlur={(e) => onUpdate(child.id, { note: e.target.value })} className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2 rounded-xl text-xs text-slate-600 border border-transparent outline-none" placeholder="備註..." /></div>
                                                 </div>
-                                            ))}
+                                            )}
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
                             </details>
                         );
@@ -629,7 +453,6 @@
             );
         };
 
-        // --- 主 App ---
         const App = () => {
             const [user, setUser] = useState(null);
             const [activities, setActivities] = useState([]);
@@ -646,17 +469,18 @@
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
+            // 讀取/儲存 LocalStorage (Use v5 key to separate from previous sessions)
             useEffect(() => {
                 if (user && activities.length > 0) {
-                    localStorage.setItem('impr_activities', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v5', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v5', JSON.stringify(tasks));
                 }
             }, [activities, tasks, user]);
 
             const fetchData = async (currUser) => {
                 setLoading(true);
-                const cachedActs = localStorage.getItem('impr_activities');
-                const cachedTasks = localStorage.getItem('impr_tasks');
+                const cachedActs = localStorage.getItem('impr_activities_v5');
+                const cachedTasks = localStorage.getItem('impr_tasks_v5');
 
                 if (cachedActs && cachedTasks) {
                     setActivities(JSON.parse(cachedActs));
@@ -664,19 +488,21 @@
                     setLoading(false);
                 } else {
                     setTimeout(() => {
+                        // 依據 ACTIVITY.csv 資料
                         const defaultActs = [
-                            { id: 'a1', name: '115年度產業數位轉型高峰會', clientName: 'IMPR 管考組', location: '台北國際會議中心', status: '進行中' }
+                            { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '台北', status: '進行中' },
+                            { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '高雄', status: '進行中' },
+                            { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '台中', status: '進行中' },
+                            { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '台北', status: '進行中' }
                         ];
                         setActivities(defaultActs);
                         
-                        const generateMockTasks = (actId) => {
-                            const all = [];
-                            SURVEY_TEMPLATE.forEach((t, i) => all.push({ id: `${actId}_s_${i}`, activityId: actId, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
-                            ITEM_TEMPLATE.forEach((t, i) => all.push({ id: `${actId}_i_${i}`, activityId: actId, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
-                            return all;
-                        }
-                        const t1 = generateMockTasks('a1');
-                        setTasks(t1);
+                        let allTasks = [];
+                        defaultActs.forEach(act => {
+                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
+                            ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
+                        });
+                        setTasks(allTasks);
                         setLoading(false);
                     }, 800);
                 }
@@ -701,32 +527,17 @@
                 if(!form.name) return;
                 setLoading(true);
                 await callGAS({ action: 'createActivity', ...form, manager: user.name });
-                const newActId = 'a' + Date.now();
+                const newActId = 'ACT-' + Date.now();
                 const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', location: form.location, status: '籌備中' };
                 
-                const generateTasksFromTemplate = (template, type) => {
-                    return template.map((t, index) => ({
-                        id: `t_${newActId}_${type}_${index}`,
-                        activityId: newActId,
-                        code: t.code,
-                        name: t.name,
-                        type: type,
-                        status: 0,
-                        isApplicable: true,
-                        assignee: '',
-                        dueDate: '',
-                        note: ''
-                    }));
-                };
-
-                const initialTasks = [
-                    ...generateTasksFromTemplate(SURVEY_TEMPLATE, 'SURVEY'),
-                    ...generateTasksFromTemplate(ITEM_TEMPLATE, 'ITEM')
-                ];
+                // 強制導入完整範本
+                let newTasks = [];
+                SURVEY_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_s_${i}`, activityId: newActId, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
+                ITEM_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_i_${i}`, activityId: newActId, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: '', dueDate: '', note: '' }));
 
                 setTimeout(() => { 
                     setActivities(prev => [newAct, ...prev]);
-                    setTasks(prev => [...prev, ...initialTasks]);
+                    setTasks(prev => [...prev, ...newTasks]);
                     setIsCreateOpen(false); 
                     setForm({name:'',clientName:'',startDate:'',endDate:'', location:''}); 
                     setLoading(false);
@@ -735,18 +546,7 @@
 
             const handleCreateTask = async (actId, taskData) => {
                 const newId = 't' + Date.now();
-                const newTask = {
-                    id: newId,
-                    activityId: actId,
-                    code: taskData.code,
-                    name: taskData.name,
-                    type: taskData.type,
-                    status: 0,
-                    isApplicable: true,
-                    assignee: '',
-                    note: '',
-                    dueDate: ''
-                };
+                const newTask = { id: newId, activityId: actId, code: taskData.code, name: taskData.name, type: taskData.type, status: 0, isApplicable: true, assignee: '', note: '', dueDate: '' };
                 setTasks(prev => [...prev, newTask]);
                 await callGAS({ action: 'createTask', ...newTask });
             };
@@ -804,52 +604,24 @@
                             <div className="px-4 py-3 sm:px-8 sm:py-5 border-b flex justify-between items-center bg-white z-10 shadow-sm">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-slate-100 rounded-xl hidden sm:block"><i data-lucide="layers" className="text-impr-orange w-5 h-5"></i></div>
-                                    <div>
-                                        <h3 className="text-lg sm:text-xl font-black text-slate-800 italic tracking-tight">任務明細</h3>
-                                        <p className="text-xs text-slate-400 font-bold">總進度：<span className="text-impr-orange font-black text-sm">{data.progress}%</span></p>
-                                    </div>
+                                    <div><h3 className="text-lg sm:text-xl font-black text-slate-800 italic tracking-tight">任務明細</h3><p className="text-xs text-slate-400 font-bold">總進度：<span className="text-impr-orange font-black text-sm">{data.progress}%</span></p></div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={() => setIsAdding(!isAdding)} className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-700 flex items-center gap-1 transition-colors">
-                                        <i data-lucide="plus" className="w-3 h-3"></i> 新增任務
-                                    </button>
+                                    <button onClick={() => setIsAdding(!isAdding)} className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-700 flex items-center gap-1 transition-colors"><i data-lucide="plus" className="w-3 h-3"></i> 新增任務</button>
                                     <button onClick={()=>setSelAct(null)} className="w-9 h-9 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors"><i data-lucide="x" className="w-5 h-5"></i></button>
                                 </div>
                             </div>
-
                             {isAdding && (
                                 <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end animate-in slide-in-from-top-2">
-                                    <div className="sm:col-span-3">
-                                        <label className="text-[10px] font-bold text-slate-400 mb-1 block">類型</label>
-                                        <select className="w-full p-2 text-xs rounded-lg border font-bold outline-none" value={newTask.type} onChange={e => setNewTask({...newTask, type: e.target.value})}>
-                                            <option value="SURVEY">場勘查核 (Survey)</option>
-                                            <option value="ITEM">專案籌備 (Item)</option>
-                                        </select>
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <label className="text-[10px] font-bold text-slate-400 mb-1 block">代碼</label>
-                                        <input type="text" className="w-full p-2 text-xs rounded-lg border font-bold outline-none" placeholder="如 3.1" value={newTask.code} onChange={e => setNewTask({...newTask, code: e.target.value})} />
-                                    </div>
-                                    <div className="sm:col-span-5">
-                                        <label className="text-[10px] font-bold text-slate-400 mb-1 block">任務名稱</label>
-                                        <input type="text" className="w-full p-2 text-xs rounded-lg border font-bold outline-none" placeholder="輸入任務名稱..." value={newTask.name} onChange={e => setNewTask({...newTask, name: e.target.value})} />
-                                    </div>
-                                    <div className="sm:col-span-2 flex gap-2">
-                                        <button onClick={submitTask} className="flex-1 py-2 bg-impr-orange text-white text-xs font-bold rounded-lg hover:bg-orange-600">確認</button>
-                                        <button onClick={() => setIsAdding(false)} className="px-3 py-2 bg-white border text-xs font-bold rounded-lg text-slate-500 hover:bg-slate-50">取消</button>
-                                    </div>
+                                    <div className="sm:col-span-3"><label className="text-[10px] font-bold text-slate-400 mb-1 block">類型</label><select className="w-full p-2 text-xs rounded-lg border font-bold outline-none" value={newTask.type} onChange={e => setNewTask({...newTask, type: e.target.value})}><option value="SURVEY">場勘查核 (Survey)</option><option value="ITEM">專案籌備 (Item)</option></select></div>
+                                    <div className="sm:col-span-2"><label className="text-[10px] font-bold text-slate-400 mb-1 block">代碼</label><input type="text" className="w-full p-2 text-xs rounded-lg border font-bold outline-none" placeholder="如 3.1" value={newTask.code} onChange={e => setNewTask({...newTask, code: e.target.value})} /></div>
+                                    <div className="sm:col-span-5"><label className="text-[10px] font-bold text-slate-400 mb-1 block">任務名稱</label><input type="text" className="w-full p-2 text-xs rounded-lg border font-bold outline-none" placeholder="輸入任務名稱..." value={newTask.name} onChange={e => setNewTask({...newTask, name: e.target.value})} /></div>
+                                    <div className="sm:col-span-2 flex gap-2"><button onClick={submitTask} className="flex-1 py-2 bg-impr-orange text-white text-xs font-bold rounded-lg hover:bg-orange-600">確認</button><button onClick={() => setIsAdding(false)} className="px-3 py-2 bg-white border text-xs font-bold rounded-lg text-slate-500 hover:bg-slate-50">取消</button></div>
                                 </div>
                             )}
-
                             <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50/50 no-scrollbar space-y-8 pb-20">
-                                <div>
-                                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-impr-orange">場勘查核 (Survey)</h4>
-                                    <TaskHierarchy tasks={surveyTasks} onUpdate={handleUpdate} />
-                                </div>
-                                <div>
-                                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-blue-500">專案籌備 (Item)</h4>
-                                    <TaskHierarchy tasks={itemTasks} onUpdate={handleUpdate} />
-                                </div>
+                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-impr-orange">場勘查核 (Survey)</h4><TaskHierarchy tasks={surveyTasks} onUpdate={handleUpdate} /></div>
+                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-blue-500">專案籌備 (Item)</h4><TaskHierarchy tasks={itemTasks} onUpdate={handleUpdate} /></div>
                             </div>
                         </div>
                     </div>
@@ -868,61 +640,31 @@
             return (
                 <div className="flex h-screen bg-white overflow-hidden">
                     {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)}></div>}
-
                     <div className={`sidebar-fixed bg-impr-dark flex flex-col text-white shadow-2xl p-6 ${sidebarOpen ? 'sidebar-open' : ''}`}>
                         <div className="flex flex-col items-center mb-8 pt-4">
-                            {!sidebarImgError ? (
-                                <img src={logoUrl} className="h-12 mb-2 object-contain" onError={() => setSidebarImgError(true)} alt="Sidebar Logo" />
-                            ) : (
-                                <div className="p-2 bg-white/10 rounded-xl border border-white/20 mb-2">{IMPR_LOGO_SVG("w-8 h-8")}</div>
-                            )}
+                            {!sidebarImgError ? <img src={logoUrl} className="h-12 mb-2 object-contain" onError={() => setSidebarImgError(true)} alt="Sidebar Logo" /> : <div className="p-2 bg-white/10 rounded-xl border border-white/20 mb-2">{IMPR_LOGO_SVG("w-8 h-8")}</div>}
                             <div className="text-center"><span className="font-black text-xl text-white mt-2 italic tracking-tighter">IMPR HUB</span></div>
                         </div>
                         <nav className="flex-1 space-y-2">
-                            <button onClick={() => { setActivePage('dashboard'); setSidebarOpen(false); }} className={`w-full p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all text-left ${activePage === 'dashboard' ? 'bg-impr-orange text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-                                <i data-lucide="layout-dashboard" className="w-5 h-5"></i> 專案管考看板
-                            </button>
-                            <button onClick={() => { setActivePage('calendar'); setSidebarOpen(false); }} className={`w-full p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all text-left ${activePage === 'calendar' ? 'bg-impr-orange text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-                                <i data-lucide="calendar-days" className="w-5 h-5"></i> 專案行事曆
-                            </button>
-                            <button onClick={() => { setActivePage('team'); setSidebarOpen(false); }} className={`w-full p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all text-left ${activePage === 'team' ? 'bg-impr-orange text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-                                <i data-lucide="users" className="w-5 h-5"></i> 團隊成員管理
-                            </button>
-                            <button onClick={() => { setActivePage('reports'); setSidebarOpen(false); }} className={`w-full p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all text-left ${activePage === 'reports' ? 'bg-impr-orange text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-                                <i data-lucide="file-bar-chart-2" className="w-5 h-5"></i> 數據分析報表
-                            </button>
-                            <button onClick={() => { setActivePage('settings'); setSidebarOpen(false); }} className={`w-full p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all text-left ${activePage === 'settings' ? 'bg-impr-orange text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-                                <i data-lucide="settings" className="w-5 h-5"></i> 系統參數設定
-                            </button>
+                            {['dashboard', 'calendar', 'team', 'reports', 'settings'].map(page => (
+                                <button key={page} onClick={() => { setActivePage(page); setSidebarOpen(false); }} className={`w-full p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all text-left ${activePage === page ? 'bg-impr-orange text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                    <i data-lucide={page === 'dashboard' ? 'layout-dashboard' : page === 'calendar' ? 'calendar-days' : page === 'team' ? 'users' : page === 'reports' ? 'file-bar-chart-2' : 'settings'} className="w-5 h-5"></i> 
+                                    {page === 'dashboard' ? '專案管考看板' : page === 'calendar' ? '專案行事曆' : page === 'team' ? '團隊成員管理' : page === 'reports' ? '數據分析報表' : '系統參數設定'}
+                                </button>
+                            ))}
                         </nav>
                         <div className="mt-auto border-t border-slate-800 pt-6">
-                            <button onClick={()=>setUser(null)} className="w-full py-3.5 border border-slate-700 rounded-2xl text-[10px] font-black text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2">
-                                <i data-lucide="log-out" className="w-3.5 h-3.5 text-rose-500"></i> 登出
-                            </button>
+                            <button onClick={()=>setUser(null)} className="w-full py-3.5 border border-slate-700 rounded-2xl text-[10px] font-black text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2"><i data-lucide="log-out" className="w-3.5 h-3.5 text-rose-500"></i> 登出</button>
                         </div>
                     </div>
 
                     <div className="content-area flex flex-col h-full bg-slate-50 overflow-hidden">
                         <header className="px-5 py-4 sm:px-10 sm:py-8 bg-white border-b flex justify-between items-center sticky top-0 z-30 shadow-sm">
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setSidebarOpen(true)} className="md:hidden text-slate-500"><i data-lucide="menu" className="w-6 h-6"></i></button>
-                                <h1 className="text-lg sm:text-2xl font-black text-slate-800 tracking-tighter italic">
-                                    {activePage === 'dashboard' && '管考看板'}
-                                    {activePage === 'team' && '團隊管理'}
-                                    {activePage === 'calendar' && '專案行事曆'}
-                                    {activePage === 'reports' && '數據報表'}
-                                    {activePage === 'settings' && '系統設定'}
-                                </h1>
-                            </div>
-                            {activePage === 'dashboard' && (
-                                <button onClick={()=>setIsCreateOpen(true)} className="px-4 py-2 sm:px-6 sm:py-3 bg-impr-orange text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm shadow-xl active:scale-95 transition-all flex items-center gap-2">
-                                    <i data-lucide="plus" className="w-4 h-4"></i> <span className="hidden sm:inline">新增專案</span><span className="sm:hidden">新增</span>
-                                </button>
-                            )}
+                            <div className="flex items-center gap-3"><button onClick={() => setSidebarOpen(true)} className="md:hidden text-slate-500"><i data-lucide="menu" className="w-6 h-6"></i></button><h1 className="text-lg sm:text-2xl font-black text-slate-800 tracking-tighter italic">{activePage === 'dashboard' ? '管考看板' : activePage === 'team' ? '團隊管理' : activePage === 'calendar' ? '專案行事曆' : activePage === 'reports' ? '數據報表' : '系統設定'}</h1></div>
+                            {activePage === 'dashboard' && <button onClick={()=>setIsCreateOpen(true)} className="px-4 py-2 sm:px-6 sm:py-3 bg-impr-orange text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm shadow-xl active:scale-95 transition-all flex items-center gap-2"><i data-lucide="plus" className="w-4 h-4"></i> <span className="hidden sm:inline">新增專案</span><span className="sm:hidden">新增</span></button>}
                         </header>
-
                         <main className="flex-1 overflow-auto p-4 sm:p-10 no-scrollbar">
-                            {activePage === 'dashboard' && (
+                            {activePage === 'dashboard' ? (
                                 <>
                                     <DashboardStats activities={activities} />
                                     <div className="flex items-center gap-2 sm:gap-4 mb-6 overflow-x-auto pb-2">
@@ -930,48 +672,25 @@
                                         <button onClick={()=>setViewTab('history')} className={`flex-shrink-0 px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${viewTab==='history' ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-400'}`}>📦 歷史歸檔</button>
                                     </div>
                                     <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                                        {filteredActivities.length === 0 ? (
-                                            <div className="text-center py-20 text-slate-400 bg-white rounded-3xl border border-dashed border-slate-200"><i data-lucide="inbox" className="w-10 h-10 mx-auto mb-2 opacity-20"></i>{viewTab === 'active' ? '暫無專案' : '尚無歸檔資料'}</div>
-                                        ) : filteredActivities.map(act => (
+                                        {filteredActivities.length === 0 ? <div className="text-center py-20 text-slate-400 bg-white rounded-3xl border border-dashed border-slate-200"><i data-lucide="inbox" className="w-10 h-10 mx-auto mb-2 opacity-20"></i>{viewTab === 'active' ? '暫無專案' : '尚無歸檔資料'}</div> : filteredActivities.map(act => (
                                             <div key={act.id} className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm p-5 sm:p-8 flex flex-col md:flex-row gap-6 hover:border-impr-orange/30 transition-all">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-2">
-                                                        <select value={act.status} onChange={(e) => handleStatusChange(act.id, e.target.value)} className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
-                                                            <option value="籌備中">籌備中</option><option value="進行中">進行中</option><option value="已完工">已完工</option><option value="結案">結案</option>
-                                                        </select>
+                                                        <select value={act.status} onChange={(e) => handleStatusChange(act.id, e.target.value)} className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`}><option value="籌備中">籌備中</option><option value="進行中">進行中</option><option value="已完工">已完工</option><option value="結案">結案</option></select>
                                                     </div>
                                                     <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-2 tracking-tight">{act.name}</h2>
-                                                    <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400">
-                                                        <span className="flex items-center gap-1"><i data-lucide="briefcase" className="w-3 h-3"></i> {act.clientName}</span>
-                                                        <span className="flex items-center gap-1"><i data-lucide="map-pin" className="w-3 h-3"></i> {act.location || '未填寫'}</span>
-                                                    </div>
+                                                    <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400"><span className="flex items-center gap-1"><i data-lucide="briefcase" className="w-3 h-3"></i> {act.clientName}</span><span className="flex items-center gap-1"><i data-lucide="map-pin" className="w-3 h-3"></i> {act.location || '未填寫'}</span></div>
                                                 </div>
                                                 <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 pt-4 sm:pt-0 border-t sm:border-0 border-slate-50">
-                                                    <div className="flex flex-col items-end gap-1 w-full sm:w-auto">
-                                                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                                                            <div className="flex-1 sm:flex-none w-auto sm:w-24 h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-impr-orange" style={{width: `${getProgress(act.id)}%`}}></div></div>
-                                                            <span className="text-sm font-black text-slate-500 font-mono">{getProgress(act.id)}%</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <button onClick={()=>setSelAct(act.id)} className="flex-1 sm:flex-none px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-black shadow-lg">管考明細</button>
-                                                        <button onClick={()=>handleDelete(act.id)} className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-400 rounded-xl hover:text-red-500 hover:bg-red-50"><i data-lucide="trash-2" className="w-4 h-4"></i></button>
-                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1 w-full sm:w-auto"><div className="flex items-center gap-3 w-full sm:w-auto"><div className="flex-1 sm:flex-none w-auto sm:w-24 h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-impr-orange" style={{width: `${getProgress(act.id)}%`}}></div></div><span className="text-sm font-black text-slate-500 font-mono">{getProgress(act.id)}%</span></div></div>
+                                                    <div className="flex gap-2"><button onClick={()=>setSelAct(act.id)} className="flex-1 sm:flex-none px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-black shadow-lg">管考明細</button><button onClick={()=>handleDelete(act.id)} className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-400 rounded-xl hover:text-red-500 hover:bg-red-50"><i data-lucide="trash-2" className="w-4 h-4"></i></button></div>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 </>
-                            )}
-
-                            {activePage === 'team' && <TeamManager />}
-
-                            {['calendar', 'reports', 'settings'].includes(activePage) && (
-                                <div className="flex flex-col items-center justify-center h-96 text-slate-400 bg-white rounded-3xl border border-slate-200 border-dashed">
-                                    <i data-lucide="construction" className="w-16 h-16 mb-4 text-slate-200"></i>
-                                    <p className="font-bold text-lg">功能開發中</p>
-                                    <p className="text-xs mt-2">此模組尚未啟用</p>
-                                </div>
+                            ) : activePage === 'team' ? <TeamManager /> : (
+                                <div className="flex flex-col items-center justify-center h-96 text-slate-400 bg-white rounded-3xl border border-slate-200 border-dashed"><i data-lucide="construction" className="w-16 h-16 mb-4 text-slate-200"></i><p className="font-bold text-lg">功能開發中</p><p className="text-xs mt-2">此模組尚未啟用</p></div>
                             )}
                         </main>
                     </div>
@@ -984,19 +703,12 @@
                                     <input type="text" placeholder="客戶名稱" className="w-full p-3 border rounded-xl font-bold text-sm" onChange={e=>setForm({...form, clientName: e.target.value})}/>
                                     <input type="text" placeholder="專案名稱" className="w-full p-3 border rounded-xl font-bold text-sm" onChange={e=>setForm({...form, name: e.target.value})}/>
                                     <input type="text" placeholder="活動地點" className="w-full p-3 border rounded-xl font-bold text-sm" onChange={e=>setForm({...form, location: e.target.value})}/>
-                                    <div className="flex gap-3">
-                                        <input type="date" className="w-1/2 p-3 border rounded-xl text-sm" onChange={e=>setForm({...form, startDate: e.target.value})}/>
-                                        <input type="date" className="w-1/2 p-3 border rounded-xl text-sm" onChange={e=>setForm({...form, endDate: e.target.value})}/>
-                                    </div>
+                                    <div className="flex gap-3"><input type="date" className="w-1/2 p-3 border rounded-xl text-sm" onChange={e=>setForm({...form, startDate: e.target.value})}/><input type="date" className="w-1/2 p-3 border rounded-xl text-sm" onChange={e=>setForm({...form, endDate: e.target.value})}/></div>
                                 </div>
-                                <div className="flex gap-3 mt-6">
-                                    <button onClick={()=>setIsCreateOpen(false)} className="flex-1 py-3 bg-slate-100 font-bold rounded-xl text-slate-500">取消</button>
-                                    <button onClick={handleCreate} disabled={loading} className="flex-1 py-3 bg-impr-orange text-white font-bold rounded-xl shadow-lg">{loading?"建立中...":"建立"}</button>
-                                </div>
+                                <div className="flex gap-3 mt-6"><button onClick={()=>setIsCreateOpen(false)} className="flex-1 py-3 bg-slate-100 font-bold rounded-xl text-slate-500">取消</button><button onClick={handleCreate} disabled={loading} className="flex-1 py-3 bg-impr-orange text-white font-bold rounded-xl shadow-lg">{loading?"建立中...":"建立"}</button></div>
                             </div>
                         </div>
                     )}
-
                     {selAct && <DetailModal actId={selAct} onCreateTask={handleCreateTask} />}
                 </div>
             );
