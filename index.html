@@ -101,7 +101,7 @@
         const logoUrl = "logo.png";
         const GAS_API_URL = ""; 
 
-        // --- 任務範本 ---
+        // --- 任務範本設定 ---
         const SURVEY_TEMPLATE = [
             { code: '1', name: '場地基本條件查核' },
             { code: '1.1', name: '長寬高尺寸與坪數測量' },
@@ -150,7 +150,7 @@
 
             return (
                 <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 sm:p-6">
-                    <div className="w-full max-w-sm bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl p-8 sm:p-10 text-center border border-slate-200">
+                    <div className="w-full max-w-sm bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl p-8 sm:p-10 text-center border border-slate-200 animate-in zoom-in-95 duration-500">
                         <div className="flex justify-center mb-6">
                             {!imgError ? (
                                 <img 
@@ -273,7 +273,6 @@
                                 </summary>
                                 
                                 <div className="p-3 sm:p-4 space-y-3 bg-white">
-                                    {/* 父任務 */}
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className="w-1 h-3 bg-slate-400 rounded-full"></span>
@@ -305,7 +304,6 @@
                                         </div>
                                     </div>
 
-                                    {/* 子任務 */}
                                     {children.length > 0 && (
                                         <div className="pl-2 sm:pl-4 border-l-2 border-slate-100 space-y-3">
                                             {children.map(child => (
@@ -368,9 +366,10 @@
             const [isCreateOpen, setIsCreateOpen] = useState(false);
             const [error, setError] = useState('');
             const [form, setForm] = useState({ name: '', clientName: '', startDate: '', endDate: '', location: '' });
+            const [activePage, setActivePage] = useState('dashboard'); // 側邊欄頁面狀態
             const [viewTab, setViewTab] = useState('active'); 
             const [sidebarOpen, setSidebarOpen] = useState(false); 
-            const [sidebarImgError, setSidebarImgError] = useState(false); // Sidebar Logo Error State
+            const [sidebarImgError, setSidebarImgError] = useState(false);
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
@@ -478,7 +477,7 @@
                 setLoading(false);
             };
 
-            // Helper function to calculate progress without using Hooks inside loop
+            // 安全的進度計算函數
             const getProgress = (actId) => {
                 const actTasks = tasks.filter(t => t.activityId === actId);
                 const subTasks = actTasks.filter(c => c.isApplicable && String(c.code).includes('.'));
@@ -549,7 +548,7 @@
                     {/* 手機版遮罩 */}
                     {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)}></div>}
 
-                    {/* 側邊欄 (響應式) */}
+                    {/* 側邊欄 (響應式 + 功能按鈕實作) */}
                     <div className={`sidebar-fixed bg-impr-dark flex flex-col text-white shadow-2xl p-6 ${sidebarOpen ? 'sidebar-open' : ''}`}>
                         <div className="flex flex-col items-center mb-8 pt-4">
                             {!sidebarImgError ? (
@@ -569,19 +568,34 @@
                             </div>
                         </div>
                         <nav className="flex-1 space-y-2">
-                            <div className="bg-impr-orange p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 shadow-lg shadow-orange-500/20 cursor-pointer transition-transform active:scale-95">
+                            <div 
+                                onClick={() => { setActivePage('dashboard'); setSidebarOpen(false); }}
+                                className={`p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all ${activePage === 'dashboard' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                            >
                                 <i data-lucide="layout-dashboard" className="w-5 h-5"></i> 專案管考看板
                             </div>
-                            <div className="p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer transition-colors">
+                            <div 
+                                onClick={() => { setActivePage('calendar'); setSidebarOpen(false); }}
+                                className={`p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all ${activePage === 'calendar' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                            >
                                 <i data-lucide="calendar-days" className="w-5 h-5"></i> 專案行事曆
                             </div>
-                            <div className="p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer transition-colors">
+                            <div 
+                                onClick={() => { setActivePage('team'); setSidebarOpen(false); }}
+                                className={`p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all ${activePage === 'team' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                            >
                                 <i data-lucide="users" className="w-5 h-5"></i> 團隊成員管理
                             </div>
-                            <div className="p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer transition-colors">
+                            <div 
+                                onClick={() => { setActivePage('reports'); setSidebarOpen(false); }}
+                                className={`p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all ${activePage === 'reports' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                            >
                                 <i data-lucide="file-bar-chart-2" className="w-5 h-5"></i> 數據分析報表
                             </div>
-                            <div className="p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer transition-colors">
+                            <div 
+                                onClick={() => { setActivePage('settings'); setSidebarOpen(false); }}
+                                className={`p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all ${activePage === 'settings' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                            >
                                 <i data-lucide="settings" className="w-5 h-5"></i> 系統參數設定
                             </div>
                         </nav>
@@ -599,73 +613,96 @@
                                 <button onClick={() => setSidebarOpen(true)} className="md:hidden text-slate-500">
                                     <i data-lucide="menu" className="w-6 h-6"></i>
                                 </button>
-                                <h1 className="text-lg sm:text-2xl font-black text-slate-800 tracking-tighter italic">管考看板</h1>
+                                <h1 className="text-lg sm:text-2xl font-black text-slate-800 tracking-tighter italic">
+                                    {activePage === 'dashboard' && '管考看板'}
+                                    {activePage === 'calendar' && '專案行事曆'}
+                                    {activePage === 'team' && '團隊管理'}
+                                    {activePage === 'reports' && '數據報表'}
+                                    {activePage === 'settings' && '系統設定'}
+                                </h1>
                             </div>
-                            <button onClick={()=>setIsCreateOpen(true)} className="px-4 py-2 sm:px-6 sm:py-3 bg-impr-orange text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm shadow-xl active:scale-95 transition-all flex items-center gap-2">
-                                <i data-lucide="plus" className="w-4 h-4"></i> <span className="hidden sm:inline">新增專案</span><span className="sm:hidden">新增</span>
-                            </button>
+                            {activePage === 'dashboard' && (
+                                <button onClick={()=>setIsCreateOpen(true)} className="px-4 py-2 sm:px-6 sm:py-3 bg-impr-orange text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm shadow-xl active:scale-95 transition-all flex items-center gap-2">
+                                    <i data-lucide="plus" className="w-4 h-4"></i> <span className="hidden sm:inline">新增專案</span><span className="sm:hidden">新增</span>
+                                </button>
+                            )}
                         </header>
 
                         <main className="flex-1 overflow-auto p-4 sm:p-10 no-scrollbar">
-                            <DashboardStats activities={activities} />
+                            {/* 根據 activePage 顯示內容 */}
+                            {activePage === 'dashboard' ? (
+                                <>
+                                    <DashboardStats activities={activities} />
 
-                            <div className="flex items-center gap-2 sm:gap-4 mb-6 overflow-x-auto pb-2">
-                                <button onClick={()=>setViewTab('active')} 
-                                    className={`flex-shrink-0 px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${viewTab==='active' ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-400'}`}>
-                                    🚀 執行中
-                                </button>
-                                <button onClick={()=>setViewTab('history')} 
-                                    className={`flex-shrink-0 px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${viewTab==='history' ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-400'}`}>
-                                    📦 歷史歸檔
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                                {filteredActivities.length === 0 ? (
-                                    <div className="text-center py-20 text-slate-400 bg-white rounded-3xl border border-dashed border-slate-200">
-                                        <i data-lucide="inbox" className="w-10 h-10 mx-auto mb-2 opacity-20"></i>
-                                        {viewTab === 'active' ? '暫無專案' : '尚無歸檔資料'}
+                                    <div className="flex items-center gap-2 sm:gap-4 mb-6 overflow-x-auto pb-2">
+                                        <button onClick={()=>setViewTab('active')} 
+                                            className={`flex-shrink-0 px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${viewTab==='active' ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-400'}`}>
+                                            🚀 執行中
+                                        </button>
+                                        <button onClick={()=>setViewTab('history')} 
+                                            className={`flex-shrink-0 px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${viewTab==='history' ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-400'}`}>
+                                            📦 歷史歸檔
+                                        </button>
                                     </div>
-                                ) : filteredActivities.map(act => (
-                                    <div key={act.id} className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm p-5 sm:p-8 flex flex-col md:flex-row gap-6 hover:border-impr-orange/30 transition-all">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <select 
-                                                    value={act.status}
-                                                    onChange={(e) => handleStatusChange(act.id, e.target.value)}
-                                                    className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`}
-                                                >
-                                                    <option value="籌備中">籌備中</option>
-                                                    <option value="進行中">進行中</option>
-                                                    <option value="已完工">已完工</option>
-                                                    <option value="結案">結案</option>
-                                                </select>
+
+                                    <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                                        {filteredActivities.length === 0 ? (
+                                            <div className="text-center py-20 text-slate-400 bg-white rounded-3xl border border-dashed border-slate-200">
+                                                <i data-lucide="inbox" className="w-10 h-10 mx-auto mb-2 opacity-20"></i>
+                                                {viewTab === 'active' ? '暫無專案' : '尚無歸檔資料'}
                                             </div>
-                                            <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-2 tracking-tight">{act.name}</h2>
-                                            <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400">
-                                                <span className="flex items-center gap-1"><i data-lucide="briefcase" className="w-3 h-3"></i> {act.clientName}</span>
-                                                <span className="flex items-center gap-1"><i data-lucide="map-pin" className="w-3 h-3"></i> {act.location || '未填寫'}</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 pt-4 sm:pt-0 border-t sm:border-0 border-slate-50">
-                                            <div className="flex flex-col items-end gap-1 w-full sm:w-auto">
-                                                <div className="flex items-center gap-3 w-full sm:w-auto">
-                                                    <div className="flex-1 sm:flex-none w-auto sm:w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-impr-orange" style={{width: `${getProgress(act.id)}%`}}></div>
+                                        ) : filteredActivities.map(act => (
+                                            <div key={act.id} className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm p-5 sm:p-8 flex flex-col md:flex-row gap-6 hover:border-impr-orange/30 transition-all">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <select 
+                                                            value={act.status}
+                                                            onChange={(e) => handleStatusChange(act.id, e.target.value)}
+                                                            className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`}
+                                                        >
+                                                            <option value="籌備中">籌備中</option>
+                                                            <option value="進行中">進行中</option>
+                                                            <option value="已完工">已完工</option>
+                                                            <option value="結案">結案</option>
+                                                        </select>
                                                     </div>
-                                                    <span className="text-sm font-black text-slate-500 font-mono">
-                                                        {getProgress(act.id)}%
-                                                    </span>
+                                                    <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-2 tracking-tight">{act.name}</h2>
+                                                    <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400">
+                                                        <span className="flex items-center gap-1"><i data-lucide="briefcase" className="w-3 h-3"></i> {act.clientName}</span>
+                                                        <span className="flex items-center gap-1"><i data-lucide="map-pin" className="w-3 h-3"></i> {act.location || '未填寫'}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 pt-4 sm:pt-0 border-t sm:border-0 border-slate-50">
+                                                    <div className="flex flex-col items-end gap-1 w-full sm:w-auto">
+                                                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                                                            <div className="flex-1 sm:flex-none w-auto sm:w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                                <div className="h-full bg-impr-orange" style={{width: `${getProgress(act.id)}%`}}></div>
+                                                            </div>
+                                                            <span className="text-sm font-black text-slate-500 font-mono">
+                                                                {getProgress(act.id)}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button onClick={()=>setSelAct(act.id)} className="flex-1 sm:flex-none px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-black shadow-lg">管考明細</button>
+                                                        <button onClick={()=>handleDelete(act.id)} className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-400 rounded-xl hover:text-red-500 hover:bg-red-50"><i data-lucide="trash-2" className="w-4 h-4"></i></button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                <button onClick={()=>setSelAct(act.id)} className="flex-1 sm:flex-none px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-black shadow-lg">管考明細</button>
-                                                <button onClick={()=>handleDelete(act.id)} className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-400 rounded-xl hover:text-red-500 hover:bg-red-50"><i data-lucide="trash-2" className="w-4 h-4"></i></button>
-                                            </div>
-                                        </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-96 text-slate-400 bg-white rounded-3xl border border-slate-200 border-dashed">
+                                    <i data-lucide="construction" className="w-16 h-16 mb-4 text-slate-200"></i>
+                                    <p className="font-bold text-lg">{
+                                        activePage === 'calendar' ? '行事曆功能開發中' : 
+                                        activePage === 'team' ? '團隊管理功能開發中' : 
+                                        activePage === 'reports' ? '報表分析功能開發中' : '系統設定功能開發中'
+                                    }</p>
+                                    <p className="text-xs mt-2">請先使用專案管考看板功能</p>
+                                </div>
+                            )}
                         </main>
                     </div>
 
