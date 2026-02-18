@@ -101,31 +101,198 @@
         const logoUrl = "logo.png";
         const GAS_API_URL = ""; 
 
-        // --- 任務範本設定 ---
+        // --- 任務範本設定 (Professional Expanded Templates) ---
+        
+        // 11大類 68細項
         const SURVEY_TEMPLATE = [
-            { code: '1', name: '場地基本條件查核' },
-            { code: '1.1', name: '長寬高尺寸與坪數測量' },
-            { code: '1.2', name: '電力負載(安培數)與配電盤位置' },
-            { code: '1.3', name: '進撤場動線與貨梯規格確認' },
-            { code: '1.4', name: '消防設施位置與逃生動線' },
-            { code: '2', name: '硬體設施檢測' },
-            { code: '2.1', name: '現場原有燈光音響測試' },
-            { code: '2.2', name: '網路訊號強弱(Wi-Fi/4G/5G)測試' },
-            { code: '2.3', name: '空調冷房能力確認' }
+            { code: '1', name: '場地基本條件 (Basic Info)' },
+            { code: '1.1', name: '場地長寬高尺寸精確測量' },
+            { code: '1.2', name: '舞台與背板搭建區域確認' },
+            { code: '1.3', name: '場地容納人數(站立/座位)確認' },
+            { code: '1.4', name: '地面材質與平整度檢查' },
+            { code: '1.5', name: '天花板懸吊點與載重限制' },
+            { code: '1.6', name: '場地現有損壞狀況紀錄(拍照存證)' },
+            
+            { code: '2', name: '進撤場動線 (Access & Loading)' },
+            { code: '2.1', name: '卸貨區位置與停車高度限制' },
+            { code: '2.2', name: '貨梯規格測量(門寬/內部深寬高/載重)' },
+            { code: '2.3', name: '卸貨區至會場動線距離與障礙物' },
+            { code: '2.4', name: '進場施工時間限制與規定' },
+            { code: '2.5', name: '撤場清運時間與垃圾處理規定' },
+            { code: '2.6', name: '大型道具搬運路徑模擬' },
+
+            { code: '3', name: '電力系統 (Power Supply)' },
+            { code: '3.1', name: '總電力負載(安培數)確認' },
+            { code: '3.2', name: '配電盤位置與接電方式(歐規/美規)' },
+            { code: '3.3', name: '臨時用電申請流程與費用' },
+            { code: '3.4', name: '發電機停放位置與拉線路徑' },
+            { code: '3.5', name: '牆面插座位置與電壓(110V/220V)' },
+            { code: '3.6', name: '電力技師窗口聯繫' },
+
+            { code: '4', name: '燈光音響視訊 (AV Systems)' },
+            { code: '4.1', name: '現場原有音響設備測試' },
+            { code: '4.2', name: '現場投影機/LED牆規格與訊號源' },
+            { code: '4.3', name: '燈光控制室位置與訊號線路徑' },
+            { code: '4.4', name: '音控台架設位置確認' },
+            { code: '4.5', name: '投影距離與布幕尺寸測量' },
+            { code: '4.6', name: '現場迴音與隔音狀況評估' },
+
+            { code: '5', name: '弱電與網路 (Network & Signals)' },
+            { code: '5.1', name: '現場Wi-Fi強度與頻寬測試' },
+            { code: '5.2', name: '各家電信(4G/5G)訊號強度實測' },
+            { code: '5.3', name: '實體網路線(LAN)插孔位置' },
+            { code: '5.4', name: '專線申請可行性評估' },
+            { code: '5.5', name: '直播訊號傳輸路徑測試' },
+
+            { code: '6', name: '消防與安全 (Safety)' },
+            { code: '6.1', name: '緊急逃生出入口位置與標示' },
+            { code: '6.2', name: '滅火器與消防栓位置清點' },
+            { code: '6.3', name: '煙霧偵測器位置與靈敏度' },
+            { code: '6.4', name: '緊急醫療站設置空間' },
+            { code: '6.5', name: '保全/警衛配置點' },
+            { code: '6.6', name: 'AED設備位置確認' },
+
+            { code: '7', name: '附屬設施 (Facilities)' },
+            { code: '7.1', name: '貴賓休息室(VIP Room)設備確認' },
+            { code: '7.2', name: '表演者梳化間位置與鏡台燈光' },
+            { code: '7.3', name: '工作人員休息/用餐區' },
+            { code: '7.4', name: '洗手間位置、數量與清潔度' },
+            { code: '7.5', name: '無障礙設施與動線確認' },
+            { code: '7.6', name: '吸菸區位置確認' },
+
+            { code: '8', name: '餐飲支援 (Catering Support)' },
+            { code: '8.1', name: '外燴備餐區(Pantry)位置' },
+            { code: '8.2', name: '用水來源(清洗/飲用)確認' },
+            { code: '8.3', name: '廚餘與垃圾處理動線' },
+            { code: '8.4', name: '餐飲用電需求確認' },
+            { code: '8.5', name: '送餐動線與時間規劃' },
+
+            { code: '9', name: '環境控制 (Environment)' },
+            { code: '9.1', name: '空調冷房能力與噪音測試' },
+            { code: '9.2', name: '空調出風口位置(是否直吹舞台)' },
+            { code: '9.3', name: '現場環境亮度與遮光需求' },
+            { code: '9.4', name: '周邊噪音干擾評估' },
+            { code: '9.5', name: '蚊蟲/異味狀況確認' },
+
+            { code: '10', name: '行政與標示 (Signage & Admin)' },
+            { code: '10.1', name: '報到區動線與桌椅擺設' },
+            { code: '10.2', name: '場外指引立牌擺放點規劃' },
+            { code: '10.3', name: '大型輸出/旗幟懸掛點確認' },
+            { code: '10.4', name: '媒體接待區位置' },
+            { code: '10.5', name: '寄物區空間規劃' },
+
+            { code: '11', name: '法規與保險 (Regulation)' },
+            { code: '11.1', name: '場地使用規範合約檢視' },
+            { code: '11.2', name: '裝修施工申請與押金' },
+            { code: '11.3', name: '公共意外責任險投保要求' },
+            { code: '11.4', name: '明火使用申請' },
+            { code: '11.5', name: '空拍機使用規範確認' },
+            { code: '11.6', name: '著作權/音樂公播權申請' }
         ];
 
+        // 12大類 84細項
         const ITEM_TEMPLATE = [
-            { code: '1', name: '活動視覺設計' },
-            { code: '1.1', name: '主視覺 (KV) 設計提案' },
-            { code: '1.2', name: '活動背板/大圖輸出設計' },
-            { code: '1.3', name: '邀請函/名牌/識別證設計' },
-            { code: '2', name: '行政與人力籌備' },
-            { code: '2.1', name: '工作人員招募與職務分配' },
-            { code: '2.2', name: '保險投保作業' },
-            { code: '2.3', name: '餐點與茶水安排' },
-            { code: '3', name: '設備與物料發包' },
-            { code: '3.1', name: '燈光音響租賃確認' },
-            { code: '3.2', name: '活動禮品/紀念品採購' }
+            { code: '1', name: '專案管理與策略' },
+            { code: '1.1', name: '專案時程表(Gantt Chart)制定' },
+            { code: '1.2', name: '專案預算表編列與控管' },
+            { code: '1.3', name: '每週工作會議安排與記錄' },
+            { code: '1.4', name: '風險管理計畫與備案(Plan B)' },
+            { code: '1.5', name: '結案報告架構確認' },
+
+            { code: '2', name: '視覺設計 (Visual Design)' },
+            { code: '2.1', name: '主視覺 (KV) 概念提案' },
+            { code: '2.2', name: '主視覺定案與延伸應用規範' },
+            { code: '2.3', name: '舞台背板與兩側帆布設計' },
+            { code: '2.4', name: '拍照區/打卡點視覺設計' },
+            { code: '2.5', name: '邀請函(電子/紙本)設計' },
+            { code: '2.6', name: '識別證/名牌/桌牌設計' },
+            { code: '2.7', name: '簡報PPT模板設計' },
+            { code: '2.8', name: '指引立牌與動線標示設計' },
+            { code: '2.9', name: '活動手冊/議程表設計' },
+
+            { code: '3', name: '文案與內容 (Content)' },
+            { code: '3.1', name: '活動Slogan與主題發想' },
+            { code: '3.2', name: '主持人講稿(Script)撰寫' },
+            { code: '3.3', name: '長官/貴賓致詞稿撰寫' },
+            { code: '3.4', name: '新聞稿(Press Release)撰寫' },
+            { code: '3.5', name: '活動宣傳文案(社群/EDM)' },
+            { code: '3.6', name: '細部流程表(Rundown)製作' },
+
+            { code: '4', name: '多媒體製作 (Multimedia)' },
+            { code: '4.1', name: '暖場影片剪輯與製作' },
+            { code: '4.2', name: '開場動畫(Opening)製作' },
+            { code: '4.3', name: '過場/頒獎音樂音效挑選' },
+            { code: '4.4', name: '現場直播訊號測試與設定' },
+            { code: '4.5', name: '活動快剪快播需求確認' },
+
+            { code: '5', name: '公關與邀請 (PR & RSVP)' },
+            { code: '5.1', name: '貴賓邀請名單整理' },
+            { code: '5.2', name: '邀請函寄送與電話追蹤' },
+            { code: '5.3', name: '出席回函(RSVP)統計' },
+            { code: '5.4', name: '座位表/分組名單安排' },
+            { code: '5.5', name: '媒體邀請與採訪通知' },
+            { code: '5.6', name: '媒體接待與新聞資料袋準備' },
+            { code: '5.7', name: '貴賓停車證/通行證寄送' },
+
+            { code: '6', name: '場地與硬體 (Venue & HW)' },
+            { code: '6.1', name: '場地租借合約簽訂與付款' },
+            { code: '6.2', name: '舞台結構與Truss架設圖確認' },
+            { code: '6.3', name: '燈光設備清單(面光/電腦燈)確認' },
+            { code: '6.4', name: '音響設備清單(麥克風/喇叭)確認' },
+            { code: '6.5', name: '視訊設備(投影/LED)規格確認' },
+            { code: '6.6', name: '電力技師與發電機安排' },
+            { code: '6.7', name: '桌椅租賃與擺設圖確認' },
+            { code: '6.8', name: '無線電/耳麥通訊設備租借' },
+
+            { code: '7', name: '佈置與道具 (Decor & Props)' },
+            { code: '7.1', name: '大圖輸出發包與施工' },
+            { code: '7.2', name: '花藝佈置/植栽租賃' },
+            { code: '7.3', name: '啟動儀式道具製作' },
+            { code: '7.4', name: '拍照手拿板/道具製作' },
+            { code: '7.5', name: '紅地毯/地貼鋪設' },
+            { code: '7.6', name: '氣球/特殊效果佈置' },
+
+            { code: '8', name: '餐飲服務 (Catering)' },
+            { code: '8.1', name: '外燴廠商詢價與試菜' },
+            { code: '8.2', name: '茶歇(Tea Break)點心確認' },
+            { code: '8.3', name: '素食/特殊飲食需求統計' },
+            { code: '8.4', name: '工作人員便當/飲料訂購' },
+            { code: '8.5', name: '晚宴酒水安排' },
+            { code: '8.6', name: '桌巾/椅套顏色確認' },
+
+            { code: '9', name: '演藝與人力 (Talent & HR)' },
+            { code: '9.1', name: '主持人敲定與合約簽署' },
+            { code: '9.2', name: '表演團體/樂團邀請' },
+            { code: '9.3', name: '禮儀小姐/接待人員招募' },
+            { code: '9.4', name: '工讀生/機動人員招募' },
+            { code: '9.5', name: '攝影師(平面/動態)發包' },
+            { code: '9.6', name: '工作人員職前訓練(Briefing)' },
+            { code: '9.7', name: '工作人員服裝統一確認' },
+
+            { code: '10', name: '禮品與物資 (Gifts)' },
+            { code: '10.1', name: '貴賓伴手禮挑選與採購' },
+            { code: '10.2', name: '禮品包裝與提袋製作' },
+            { code: '10.3', name: '抽獎獎項採購與造冊' },
+            { code: '10.4', name: '文具/報到物資準備' },
+            { code: '10.5', name: '雨備物資(雨傘/雨衣)準備' },
+            { code: '10.6', name: '防疫物資(口罩/酒精)準備' },
+
+            { code: '11', name: '行政與保險 (Admin)' },
+            { code: '11.1', name: '活動公共意外責任險投保' },
+            { code: '11.2', name: '工作人員短期意外險投保' },
+            { code: '11.3', name: '音樂公播權申請' },
+            { code: '11.4', name: '道路使用權/路權申請' },
+            { code: '11.5', name: '停車位預留與繳費' },
+            { code: '11.6', name: '各項合約用印與歸檔' },
+
+            { code: '12', name: '結案與請款 (Closing)' },
+            { code: '12.1', name: '活動照片/影片整理歸檔' },
+            { code: '12.2', name: '新聞露出監測報告(Clipping)' },
+            { code: '12.3', name: '結案報告書撰寫' },
+            { code: '12.4', name: '各項支出單據整理' },
+            { code: '12.5', name: '廠商請款與核銷' },
+            { code: '12.6', name: '客戶請款發票開立' },
+            { code: '12.7', name: '感謝函寄送' }
         ];
 
         // Logo SVG
@@ -273,6 +440,7 @@
                                 </summary>
                                 
                                 <div className="p-3 sm:p-4 space-y-3 bg-white">
+                                    {/* 父任務 */}
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className="w-1 h-3 bg-slate-400 rounded-full"></span>
@@ -304,6 +472,7 @@
                                         </div>
                                     </div>
 
+                                    {/* 子任務 */}
                                     {children.length > 0 && (
                                         <div className="pl-2 sm:pl-4 border-l-2 border-slate-100 space-y-3">
                                             {children.map(child => (
@@ -477,7 +646,7 @@
                 setLoading(false);
             };
 
-            // 安全的進度計算函數
+            // Helper function to calculate progress without using Hooks inside loop
             const getProgress = (actId) => {
                 const actTasks = tasks.filter(t => t.activityId === actId);
                 const subTasks = actTasks.filter(c => c.isApplicable && String(c.code).includes('.'));
@@ -568,36 +737,36 @@
                             </div>
                         </div>
                         <nav className="flex-1 space-y-2">
-                            <div 
+                            <button 
                                 onClick={() => { setActivePage('dashboard'); setSidebarOpen(false); }}
-                                className={`p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all ${activePage === 'dashboard' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                                className={`w-full p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all text-left ${activePage === 'dashboard' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                             >
                                 <i data-lucide="layout-dashboard" className="w-5 h-5"></i> 專案管考看板
-                            </div>
-                            <div 
+                            </button>
+                            <button 
                                 onClick={() => { setActivePage('calendar'); setSidebarOpen(false); }}
-                                className={`p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all ${activePage === 'calendar' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                                className={`w-full p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all text-left ${activePage === 'calendar' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                             >
                                 <i data-lucide="calendar-days" className="w-5 h-5"></i> 專案行事曆
-                            </div>
-                            <div 
+                            </button>
+                            <button 
                                 onClick={() => { setActivePage('team'); setSidebarOpen(false); }}
-                                className={`p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all ${activePage === 'team' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                                className={`w-full p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all text-left ${activePage === 'team' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                             >
                                 <i data-lucide="users" className="w-5 h-5"></i> 團隊成員管理
-                            </div>
-                            <div 
+                            </button>
+                            <button 
                                 onClick={() => { setActivePage('reports'); setSidebarOpen(false); }}
-                                className={`p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all ${activePage === 'reports' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                                className={`w-full p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all text-left ${activePage === 'reports' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                             >
                                 <i data-lucide="file-bar-chart-2" className="w-5 h-5"></i> 數據分析報表
-                            </div>
-                            <div 
+                            </button>
+                            <button 
                                 onClick={() => { setActivePage('settings'); setSidebarOpen(false); }}
-                                className={`p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all ${activePage === 'settings' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                                className={`w-full p-3.5 rounded-2xl font-black text-sm flex items-center gap-3 cursor-pointer transition-all text-left ${activePage === 'settings' ? 'bg-impr-orange text-white shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                             >
                                 <i data-lucide="settings" className="w-5 h-5"></i> 系統參數設定
-                            </div>
+                            </button>
                         </nav>
                         <div className="mt-auto border-t border-slate-800 pt-6">
                             <button onClick={()=>setUser(null)} className="w-full py-3.5 border border-slate-700 rounded-2xl text-[10px] font-black text-slate-400 hover:text-white transition-all flex items-center justify-center gap-2">
