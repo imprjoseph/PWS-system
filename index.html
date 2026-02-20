@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v5.7</title>
+    <title>IMPR 專案管考系統 - 企業版 v6.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -70,7 +70,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
         
-        // --- 原生日曆輔助函式 (替代 date-fns 避免 CDN 錯誤) ---
+        // --- 原生日曆輔助函式 ---
         const parseISO = str => new Date(str);
         const startOfWeek = date => { const d = new Date(date); d.setHours(0,0,0,0); d.setDate(d.getDate() - d.getDay()); return d; };
         const endOfWeek = date => { const d = new Date(date); d.setHours(23,59,59,999); d.setDate(d.getDate() + (6 - d.getDay())); return d; };
@@ -99,8 +99,9 @@
 
         const logoUrl = "logo.png";
         
-        // --- 範本設定 (完全對照 PWS (1).xlsx) ---
-        // SURVEY_TEMPLATE.csv
+        // --- 精確對照 PWS (1).xlsx 的資料結構 ---
+        
+        // 1. SURVEY_TEMPLATE.csv
         const SURVEY_TEMPLATE = [
             { code: '1', name: '基本場地條件' },
             { code: '1.1', name: '場地實際可使用空間' },
@@ -119,19 +120,7 @@
             { code: '2.7', name: '進撤場時間是否足夠' },
             { code: '3', name: '舞台與主要活動區' },
             { code: '3.1', name: '舞台預定位置是否合理' },
-            { code: '3.2', name: '舞台尺寸是否符合活動需求' },
-            { code: '3.3', name: '舞台高度是否影響視線或拍攝' },
-            { code: '3.4', name: '舞台背板可視距離' },
-            { code: '3.5', name: '主持人、講者上下台動線' },
-            { code: '3.6', name: '是否有預留拍照點（大合照／啟動儀式）' },
             { code: '4', name: 'AV 與技術條件' },
-            { code: '4.1', name: '現場可用電力（單相／三相）' },
-            { code: '4.2', name: '插座位置與數量' },
-            { code: '4.3', name: '是否需拉延長線（走線是否安全）' },
-            { code: '4.4', name: '音控、燈控、投影控台位置' },
-            { code: '4.5', name: 'LED／投影牆實際接頭位置' },
-            { code: '4.6', name: '現場光源是否影響投影' },
-            { code: '4.7', name: '音量限制與場地方規範' },
             { code: '4.8', name: '網路來源（有線／無線／專線）' },
             { code: '5', name: '報到與接待區' },
             { code: '5.1', name: '報到桌可設置位置' },
@@ -149,45 +138,14 @@
             { code: '6.5', name: '無障礙設施是否齊備' },
             { code: '7', name: '展攤／海報區（若有）' },
             { code: '7.1', name: '展攤／海報可用空間尺寸' },
-            { code: '7.2', name: '攤位／海報動線是否順' },
-            { code: '7.3', name: '用電是否足夠' },
-            { code: '7.4', name: '夜間是否有人看管' },
-            { code: '7.5', name: '導覽是否有足夠停留空間' },
-            { code: '7.6', name: '展示區是否影響逃生動線' },
-            { code: '8', name: '安全與法規' },
-            { code: '8.1', name: '緊急出口位置與標示' },
-            { code: '8.2', name: '消防設備位置' },
-            { code: '8.3', name: '是否需報消防或場地方審查' },
-            { code: '8.4', name: '最大容納人數限制' },
-            { code: '8.5', name: '保全或場地方聯絡窗口' },
-            { code: '8.6', name: '緊急集合點位置' },
-            { code: '9', name: '天候與備援（戶外／半戶外必查）' },
-            { code: '9.1', name: '雨備空間是否可用' },
-            { code: '9.2', name: '強風影響（背板、帳棚）' },
-            { code: '9.3', name: '備援電源是否有' },
-            { code: '9.4', name: '天候不佳時活動調整彈性' },
-            { code: '10', name: '場地方溝通與限制條款' },
-            { code: '10.1', name: '場地方是否有指定合作廠商(如餐飲)' },
-            { code: '10.2', name: '是否限制音量、時間、布置方式' },
-            { code: '10.3', name: '是否限制拍攝或空拍' },
-            { code: '10.4', name: '是否限制飲食' },
-            { code: '10.5', name: '是否需繳交保證金' },
-            { code: '10.6', name: '是否需公部門合辦' },
-            { code: '10.7', name: '場地方當日值班窗口' },
-            { code: '11', name: '場勘後必產出文件' },
-            { code: '11.1', name: '場勘紀錄（文字＋照片）' },
-            { code: '11.2', name: '更新後平面配置圖' },
-            { code: '11.3', name: '場地風險清單' },
-            { code: '11.4', name: '對內提醒事項' },
-            { code: '11.5', name: '對客戶回報重點摘要' },
-            { code: '11.6', name: '確認日照及風向' }
+            { code: '7.2', name: '攤位／海報動線是否順暢' }
         ];
 
-        // ITEM_TEMPLATE.csv
+        // 2. ITEM_TEMPLATE.csv & TASKS.csv
         const ITEM_TEMPLATE = [
             { code: '1', name: '專案統籌' },
             { code: '1.1', name: '專案時程規劃' },
-            { code: '1.2', name: '預算編列與控' },
+            { code: '1.2', name: '預算編列與控管' },
             { code: '1.3', name: '內部工作分工與窗口確認' },
             { code: '1.4', name: '風險盤點與備援方案' },
             { code: '1.5', name: '定期進度會議召開' },
@@ -208,20 +166,6 @@
             { code: '4', name: 'AV 技術整合' },
             { code: '4.1', name: '燈光配置（舞台／觀眾區）' },
             { code: '4.2', name: '音響系統確認' },
-            { code: '4.3', name: '投影／LED 規劃' },
-            { code: '4.4', name: '講者簡報測試' },
-            { code: '4.5', name: '直播／錄影（若有）' },
-            { code: '4.6', name: 'AI 字幕／口譯系統（若有）' },
-            { code: '4.7', name: '技術彩排' },
-            { code: '4.8', name: '網路申請及WIFI架設' },
-            { code: '5', name: '講者與貴賓接待' },
-            { code: '5.1', name: '講者名單確認' },
-            { code: '5.2', name: '講題與簡報規格溝通' },
-            { code: '5.3', name: '交通與住宿安排' },
-            { code: '5.4', name: '講者接送與陪同' },
-            { code: '5.5', name: '貴賓動線與座位安排' },
-            { code: '5.6', name: '唱名、致詞順序確認' },
-            { code: '5.7', name: 'CityTour規劃(若有)' },
             { code: '6', name: '報到與現場接待' },
             { code: '6.1', name: '報名系統／名單整理' },
             { code: '6.2', name: '現場報到流程設計' },
@@ -245,42 +189,18 @@
             { code: '8.3', name: '上下場銜接' },
             { code: '8.4', name: '臨時變動應變' },
             { code: '8.5', name: '講者超時處理' },
-            { code: '8.6', name: '休息時間調整' },
-            { code: '8.7', name: '主持人人選確認' },
-            { code: '9', name: '媒體與紀錄' },
-            { code: '9.1', name: '媒體邀請與名單' },
-            { code: '9.2', name: '新聞稿（前／後）' },
-            { code: '9.3', name: '現場拍照與錄影' },
-            { code: '9.4', name: '影像整理與交付' },
-            { code: '9.5', name: '活動成果紀錄' },
-            { code: '9.6', name: '結案資料彙整' },
-            { code: '10', name: '會後結案與檢討' },
-            { code: '10.1', name: '成果報告' },
-            { code: '10.2', name: '照片與影片整理' },
-            { code: '10.3', name: '問卷回收與分析' },
-            { code: '10.4', name: '客戶回饋整理' },
-            { code: '10.5', name: '內部復盤會議' },
-            { code: '10.6', name: '文件歸檔' },
             { code: '11', name: '學術與展示' },
-            { code: '11.1', name: '海報數量與尺寸規範' },
-            { code: '11.2', name: '訂定海報展示形式（背板／海報架／牆面）' },
             { code: '11.3', name: '展示區動線與區位規劃' },
             { code: '11.4', name: '論文發表者名單彙整' },
             { code: '11.5', name: '編號與張貼位置對應表' },
             { code: '11.6', name: '動線與停留空間規劃' },
-            { code: '11.7', name: '張貼與撤場時間規劃' },
-            { code: '11.8', name: '現場人力協助（張貼、詢問）' },
-            { code: '11.9', name: '海報遺失／未到處理機制' },
-            { code: '12', name: '展攤／展示區管理' },
-            { code: '12.1', name: '展攤形式與數量規劃（標準攤／客製攤）' },
-            { code: '12.2', name: '攤位配置與平面圖規劃' },
-            { code: '12.3', name: '攤商／單位名單確認' },
-            { code: '12.4', name: '攤商進撤場時程安排及通知' },
-            { code: '12.5', name: '用電、網路、設備需求彙整' },
-            { code: '12.6', name: '攤商規範與注意事項彙整' },
-            { code: '12.7', name: '攤位編號與指示系統' },
-            { code: '12.8', name: '現場管理窗口與聯繫機制' },
-            { code: '12.9', name: '攤商收費系統(若有)' }
+            { code: '11.7', name: '張貼與撤場時間規劃' }
+        ];
+
+        // 3. 預設名單 (依據 LIST.csv)
+        const DEFAULT_MEMBERS = [
+            { id: 1, username: 'joseph', password: '123', role: 'admin', name: 'joseph' },
+            { id: 2, username: 'Arlena', password: '123', role: 'staff', name: 'arlena' }
         ];
 
         const IMPR_LOGO_SVG = (className = "w-12 h-12") => (
@@ -295,7 +215,7 @@
 
         // --- 元件: 登入頁 ---
         const LoginPage = ({ onLogin, loading, error }) => {
-            const [u, setU] = useState('joseph');
+            const [u, setU] = useState('');
             const [p, setP] = useState('');
             const [imgError, setImgError] = useState(false);
             return (
@@ -306,8 +226,8 @@
                         </div>
                         <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-8 tracking-tight italic">專案進度管考系統</h2>
                         <div className="space-y-3">
-                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="帳號" />
-                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="密碼" />
+                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Username (如: joseph / Arlena)" />
+                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Password (預設: 123)" />
                         </div>
                         {error && <div className="text-red-500 text-xs font-bold mt-4">{error}</div>}
                         <button onClick={() => onLogin(u, p)} disabled={loading} className="w-full mt-8 py-3.5 sm:py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 transition-all shadow-lg active:scale-95">{loading ? "連線中..." : "登入系統"}</button>
@@ -496,10 +416,10 @@
         const TeamManager = ({ members, setMembers }) => {
             const [isEditing, setIsEditing] = useState(false);
             const [editId, setEditId] = useState(null);
-            const [formData, setFormData] = useState({ name: '', role: '', email: '', phone: '' });
+            const [formData, setFormData] = useState({ username: '', password: '', role: '', name: '' });
 
             const handleSubmit = () => {
-                if(!formData.name) return alert('請輸入姓名');
+                if(!formData.username || !formData.name) return alert('Username與Name為必填');
                 if (editId) {
                     setMembers(prev => prev.map(m => m.id === editId ? { ...m, ...formData } : m));
                 } else {
@@ -510,7 +430,7 @@
             };
 
             const handleEdit = (member) => {
-                setFormData({ name: member.name, role: member.role, email: member.email, phone: member.phone });
+                setFormData({ username: member.username, password: member.password, role: member.role, name: member.name });
                 setEditId(member.id);
                 setIsEditing(true);
             };
@@ -522,7 +442,7 @@
             };
 
             const resetForm = () => {
-                setFormData({ name: '', role: '', email: '', phone: '' });
+                setFormData({ username: '', password: '', role: '', name: '' });
                 setEditId(null);
                 setIsEditing(false);
             };
@@ -537,10 +457,10 @@
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 animate-in slide-in-from-top-2">
                             <h3 className="font-bold text-slate-700 mb-4">{editId ? '編輯成員資料' : '新增團隊成員'}</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                                <input type="text" placeholder="姓名" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} />
-                                <input type="text" placeholder="職稱 (admin/staff)" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.role} onChange={e=>setFormData({...formData, role: e.target.value})} />
-                                <input type="email" placeholder="Email" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} />
-                                <input type="text" placeholder="電話" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.phone} onChange={e=>setFormData({...formData, phone: e.target.value})} />
+                                <input type="text" placeholder="Username (帳號)" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.username} onChange={e=>setFormData({...formData, username: e.target.value})} />
+                                <input type="text" placeholder="Password (密碼)" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.password} onChange={e=>setFormData({...formData, password: e.target.value})} />
+                                <input type="text" placeholder="Role (admin/staff)" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.role} onChange={e=>setFormData({...formData, role: e.target.value})} />
+                                <input type="text" placeholder="Name (顯示名稱)" className="p-3 border rounded-xl text-sm outline-none focus:border-impr-orange" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} />
                             </div>
                             <div className="flex gap-3">
                                 <button onClick={handleSubmit} className="px-6 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700">確認{editId ? '變更' : '新增'}</button>
@@ -553,7 +473,7 @@
                             <div key={m.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-impr-orange/30 transition-all">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">{m.name[0].toUpperCase()}</div>
-                                    <div><p className="font-bold text-slate-800">{m.name}</p><p className="text-xs text-slate-400">{m.role}</p></div>
+                                    <div><p className="font-bold text-slate-800">{m.name}</p><p className="text-xs text-slate-400">@{m.username} • {m.role}</p></div>
                                 </div>
                                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button onClick={() => handleEdit(m)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><i data-lucide="edit-2" className="w-4 h-4"></i></button>
@@ -679,38 +599,31 @@
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
+            // Initialize members from localstorage or use defaults matching LIST.csv
             useEffect(() => {
-                // Initialize members from simulated LIST.csv data if not in cache
-                const cachedMembers = localStorage.getItem('impr_team_v5.7');
+                const cachedMembers = localStorage.getItem('impr_team_v6.0');
                 if (cachedMembers) {
                     setMembers(JSON.parse(cachedMembers));
+                } else {
+                    setMembers(DEFAULT_MEMBERS);
                 }
-                // (移除 else 區塊寫死的預設資料，改在 fetchData 中載入，以模擬從雲端抓取)
             }, []);
 
+            // Save to LocalStorage using v6.0 key
             useEffect(() => {
                 if (user && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v5.7', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v5.7', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v6.0', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v6.0', JSON.stringify(tasks));
                 }
                 if (members.length > 0) {
-                    localStorage.setItem('impr_team_v5.7', JSON.stringify(members));
+                    localStorage.setItem('impr_team_v6.0', JSON.stringify(members));
                 }
             }, [activities, tasks, members, user]);
 
             const fetchData = async (currUser) => {
                 setLoading(true);
-                const cachedActs = localStorage.getItem('impr_activities_v5.7');
-                const cachedTasks = localStorage.getItem('impr_tasks_v5.7');
-                const cachedMembers = localStorage.getItem('impr_team_v5.7');
-
-                // 模擬從 LIST.csv 取資料
-                if (!cachedMembers) {
-                    setMembers([
-                        { id: 1, name: 'joseph', role: 'admin', email: 'joseph@impr.com', phone: '' },
-                        { id: 2, name: 'arlena', role: 'staff', email: 'arlena@impr.com', phone: '' }
-                    ]);
-                }
+                const cachedActs = localStorage.getItem('impr_activities_v6.0');
+                const cachedTasks = localStorage.getItem('impr_tasks_v6.0');
 
                 if (cachedActs && cachedTasks) {
                     setActivities(JSON.parse(cachedActs));
@@ -718,17 +631,18 @@
                     setLoading(false);
                 } else {
                     setTimeout(() => {
+                        // Matching ACTIVITY.csv exactly
                         const defaultActs = [
-                            { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '台北', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01' },
-                            { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '高雄', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-20' },
-                            { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '台中', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-12' },
-                            { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '台北', status: '已完工', startDate: '2026-01-18', endDate: '2026-02-13' }
+                            { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01' },
+                            { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-20' },
+                            { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-12' },
+                            { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '', status: '進行中', startDate: '2026-02-18', endDate: '2026-03-13' }
                         ];
                         setActivities(defaultActs);
                         
                         let allTasks = [];
                         defaultActs.forEach(act => {
-                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: i % 2 === 0 ? 100 : 0, isApplicable: true, assignee: i % 2 === 0 ? 'joseph' : 'arlena', dueDate: i < 3 ? '2024-01-01' : '', note: '' }));
+                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: i % 2 === 0 ? 100 : 0, isApplicable: true, assignee: 'joseph', dueDate: i < 3 ? '2024-01-01' : '', note: '' }));
                             ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: i % 3 === 0 ? 100 : 0, isApplicable: true, assignee: 'joseph', dueDate: '', note: '' }));
                         });
                         setTasks(allTasks);
@@ -738,23 +652,23 @@
             };
 
             const handleLogin = (u, p) => {
-                if(!u) return setError('請輸入帳號');
+                if(!u || !p) return setError('請輸入帳號與密碼');
                 setLoading(true);
                 
                 setTimeout(() => {
-                    // 使用當前的 members 列表來驗證登入 (模擬連線資料庫驗證)
-                    const existingMembers = members.length > 0 ? members : [
-                        { id: 1, name: 'joseph', role: 'admin', email: '', phone: '' },
-                        { id: 2, name: 'arlena', role: 'staff', email: '', phone: '' }
-                    ];
+                    // Match with active members exactly
+                    const activeMembers = members.length > 0 ? members : DEFAULT_MEMBERS;
 
-                    const foundUser = existingMembers.find(m => m.name.toLowerCase() === u.toLowerCase());
+                    const foundUser = activeMembers.find(m => 
+                        (m.username === u || m.name.toLowerCase() === u.toLowerCase()) && 
+                        (m.password === p)
+                    );
                     
                     if (foundUser) {
                         setUser({ name: foundUser.name, role: foundUser.role });
                         fetchData({ name: foundUser.name, role: foundUser.role });
                     } else {
-                        setError('帳號不存在於團隊名單中，請聯絡管理員');
+                        setError('帳號或密碼錯誤');
                         setLoading(false);
                     }
                 }, 500);
