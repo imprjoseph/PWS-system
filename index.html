@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v5.4</title>
+    <title>IMPR 專案管考系統 - 企業版 v5.5</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -680,29 +680,32 @@
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
             useEffect(() => {
-                const cachedMembers = localStorage.getItem('impr_team_v5.4');
+                // Initialize members from simulated LIST.csv data if not in cache
+                const cachedMembers = localStorage.getItem('impr_team_v5.6');
                 if (cachedMembers) {
                     setMembers(JSON.parse(cachedMembers));
                 } else {
                     setMembers([
                         { id: 1, name: 'joseph', role: 'admin', email: 'joseph@impr.com', phone: '' },
-                        { id: 2, name: 'Arlena', role: 'staff', email: 'arlena@impr.com', phone: '' }
+                        { id: 2, name: 'arlena', role: 'staff', email: 'arlena@impr.com', phone: '' }
                     ]);
                 }
             }, []);
 
             useEffect(() => {
                 if (user && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v5.4', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v5.4', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v5.6', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v5.6', JSON.stringify(tasks));
                 }
-                localStorage.setItem('impr_team_v5.4', JSON.stringify(members));
+                if (members.length > 0) {
+                    localStorage.setItem('impr_team_v5.6', JSON.stringify(members));
+                }
             }, [activities, tasks, members, user]);
 
             const fetchData = async (currUser) => {
                 setLoading(true);
-                const cachedActs = localStorage.getItem('impr_activities_v5.4');
-                const cachedTasks = localStorage.getItem('impr_tasks_v5.4');
+                const cachedActs = localStorage.getItem('impr_activities_v5.6');
+                const cachedTasks = localStorage.getItem('impr_tasks_v5.6');
 
                 if (cachedActs && cachedTasks) {
                     setActivities(JSON.parse(cachedActs));
@@ -720,7 +723,7 @@
                         
                         let allTasks = [];
                         defaultActs.forEach(act => {
-                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: i % 2 === 0 ? 100 : 0, isApplicable: true, assignee: i % 2 === 0 ? 'joseph' : 'Arlena', dueDate: i < 3 ? '2024-01-01' : '', note: '' }));
+                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: i % 2 === 0 ? 100 : 0, isApplicable: true, assignee: i % 2 === 0 ? 'joseph' : 'arlena', dueDate: i < 3 ? '2024-01-01' : '', note: '' }));
                             ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: i % 3 === 0 ? 100 : 0, isApplicable: true, assignee: 'joseph', dueDate: '', note: '' }));
                         });
                         setTasks(allTasks);
@@ -734,8 +737,9 @@
                 setLoading(true);
                 setTimeout(() => {
                     let mockUser;
+                    // Updated login validation to match LIST.csv
                     if(u.toLowerCase() === 'joseph') mockUser = { name: 'joseph', role: 'admin' };
-                    else if(u.toLowerCase() === 'arlena') mockUser = { name: 'Arlena', role: 'staff' };
+                    else if(u.toLowerCase() === 'arlena') mockUser = { name: 'arlena', role: 'staff' };
                     else return setError('帳號錯誤');
                     
                     setUser(mockUser);
