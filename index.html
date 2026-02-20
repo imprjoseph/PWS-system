@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v6.1</title>
+    <title>IMPR 專案管考系統 - 企業版 v6.2</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -418,6 +418,13 @@
             const [editId, setEditId] = useState(null);
             const [formData, setFormData] = useState({ username: '', password: '', role: '', name: '' });
 
+            // Ensure members array is populated
+            useEffect(() => {
+                if (members.length === 0) {
+                    setMembers(DEFAULT_MEMBERS);
+                }
+            }, []);
+
             const handleSubmit = () => {
                 if(!formData.username || !formData.name) return alert('Username與Name為必填');
                 if (editId) {
@@ -472,7 +479,7 @@
                         {members.map(m => (
                             <div key={m.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-impr-orange/30 transition-all">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">{m.name[0].toUpperCase()}</div>
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">{m.name && m.name[0] ? m.name[0].toUpperCase() : '?'}</div>
                                     <div><p className="font-bold text-slate-800">{m.name}</p><p className="text-xs text-slate-400">@{m.username} • {m.role}</p></div>
                                 </div>
                                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -585,10 +592,10 @@
         const App = () => {
             const [user, setUser] = useState(null);
             
-            // 獨立的狀態宣告，並在第一次就從 cache 中讀取 (防止空陣列清空快取)
+            // Initialization with DEFAULT_MEMBERS directly to prevent empty cache issues
             const [members, setMembers] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_team_v6.1');
+                    const cached = localStorage.getItem('impr_team_v6.2');
                     const parsed = cached ? JSON.parse(cached) : [];
                     return parsed.length > 0 ? parsed : DEFAULT_MEMBERS;
                 } catch {
@@ -598,14 +605,14 @@
 
             const [activities, setActivities] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_activities_v6.1');
+                    const cached = localStorage.getItem('impr_activities_v6.2');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
 
             const [tasks, setTasks] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_tasks_v6.1');
+                    const cached = localStorage.getItem('impr_tasks_v6.2');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
@@ -622,25 +629,26 @@
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
-            // 單向保存邏輯：只有當有資料時才覆寫 LocalStorage
+            // Ensure members has defaults
             useEffect(() => {
-                if (members && members.length > 0) {
-                    localStorage.setItem('impr_team_v6.1', JSON.stringify(members));
+                if (members.length === 0) {
+                    setMembers(DEFAULT_MEMBERS);
                 }
             }, [members]);
 
+            // Save to LocalStorage using v6.2 key
             useEffect(() => {
                 if (activities && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v6.1', JSON.stringify(activities));
+                    localStorage.setItem('impr_activities_v6.2', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v6.2', JSON.stringify(tasks));
                 }
-                if (tasks && tasks.length > 0) {
-                    localStorage.setItem('impr_tasks_v6.1', JSON.stringify(tasks));
+                if (members && members.length > 0) {
+                    localStorage.setItem('impr_team_v6.2', JSON.stringify(members));
                 }
-            }, [activities, tasks]);
+            }, [activities, tasks, members]);
 
             const fetchData = async () => {
                 setLoading(true);
-                // 檢查是否為空，若為空則寫入 ACTIVITY.csv 與 TASKS 的預設值
                 if (activities.length === 0 || tasks.length === 0) {
                     setTimeout(() => {
                         const defaultActs = [
@@ -671,7 +679,7 @@
                 setTimeout(() => {
                     const activeMembers = members.length > 0 ? members : DEFAULT_MEMBERS;
                     const foundUser = activeMembers.find(m => 
-                        (m.username.toLowerCase() === u.toLowerCase() || m.name.toLowerCase() === u.toLowerCase()) && 
+                        (m.username === u || m.name.toLowerCase() === u.toLowerCase()) && 
                         (m.password === p)
                     );
                     
