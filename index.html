@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v6.2</title>
+    <title>IMPR 專案管考系統 - 企業版 v6.4</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -418,13 +418,6 @@
             const [editId, setEditId] = useState(null);
             const [formData, setFormData] = useState({ username: '', password: '', role: '', name: '' });
 
-            // Ensure members array is populated
-            useEffect(() => {
-                if (members.length === 0) {
-                    setMembers(DEFAULT_MEMBERS);
-                }
-            }, []);
-
             const handleSubmit = () => {
                 if(!formData.username || !formData.name) return alert('Username與Name為必填');
                 if (editId) {
@@ -493,7 +486,8 @@
             );
         };
 
-        const TaskHierarchy = ({ tasks, user, onUpdate }) => {
+        // --- 核心：與團隊名單連動的任務元件 ---
+        const TaskHierarchy = ({ tasks, user, members, onUpdate }) => {
             const { parents, childrenMap } = useMemo(() => {
                 const parents = [];
                 const childrenMap = {};
@@ -556,7 +550,19 @@
                                 <div className="p-3 sm:p-4 space-y-3 bg-white">
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                                            <div className="md:col-span-2 relative"><i data-lucide="user" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.assignee} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { assignee: e.target.value })} className="editable-field w-full bg-white pl-9 pr-2 py-2.5 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 outline-none" placeholder="總負責人" /></div>
+                                            <div className="md:col-span-2 relative">
+                                                <i data-lucide="user" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i>
+                                                {/* 與團隊名單連動的下拉選單 */}
+                                                <select 
+                                                    value={parent.assignee || ''} 
+                                                    disabled={!canEditParent} 
+                                                    onChange={(e) => onUpdate(parent.id, { assignee: e.target.value })} 
+                                                    className="editable-field w-full bg-white pl-9 pr-2 py-2.5 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 outline-none cursor-pointer appearance-none"
+                                                >
+                                                    <option value="">未指派</option>
+                                                    {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                                                </select>
+                                            </div>
                                             <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className={`editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold border border-slate-200 outline-none ${isParentDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
                                             <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200"><input type="range" min="0" max="100" step="10" defaultValue={parent.status} disabled={children.length > 0 || !canEditParent} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span></div>
                                             <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.note} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { note: e.target.value })} className="editable-field w-full bg-white pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-slate-200 outline-none" placeholder="備註..." /></div>
@@ -573,7 +579,19 @@
                                             </div>
                                             {child.isApplicable && (
                                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pl-0 sm:pl-11">
-                                                    <div className="md:col-span-2 relative"><i data-lucide="user" className="absolute left-3 top-3 w-3 h-3 text-slate-400"></i><input type="text" defaultValue={child.assignee} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { assignee: e.target.value })} className="editable-field w-full bg-slate-50 pl-8 pr-2 py-2 rounded-xl text-xs font-bold text-slate-600 border border-transparent outline-none" placeholder="負責人" /></div>
+                                                    <div className="md:col-span-2 relative">
+                                                        <i data-lucide="user" className="absolute left-3 top-3 w-3 h-3 text-slate-400"></i>
+                                                        {/* 與團隊名單連動的下拉選單 */}
+                                                        <select 
+                                                            value={child.assignee || ''} 
+                                                            disabled={!canEditChild} 
+                                                            onChange={(e) => onUpdate(child.id, { assignee: e.target.value })} 
+                                                            className="editable-field w-full bg-slate-50 pl-8 pr-2 py-2 rounded-xl text-xs font-bold text-slate-600 border border-transparent outline-none cursor-pointer appearance-none"
+                                                        >
+                                                            <option value="">未指派</option>
+                                                            {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                                                        </select>
+                                                    </div>
                                                     <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className={`editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold border border-transparent outline-none ${isChildDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
                                                     <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent"><input type="range" min="0" max="100" step="10" defaultValue={child.status} disabled={!canEditChild} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className={`text-xs font-black w-8 text-right font-mono ${isChildDelayed ? 'text-impr-danger' : 'text-impr-orange'}`}>{child.status}%</span></div>
                                                     <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3 h-3 text-slate-300"></i><input type="text" defaultValue={child.note} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { note: e.target.value })} className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2 rounded-xl text-xs text-slate-600 border border-transparent outline-none" placeholder="備註..." /></div>
@@ -592,10 +610,9 @@
         const App = () => {
             const [user, setUser] = useState(null);
             
-            // Initialization with DEFAULT_MEMBERS directly to prevent empty cache issues
             const [members, setMembers] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_team_v6.2');
+                    const cached = localStorage.getItem('impr_team_v6.4');
                     const parsed = cached ? JSON.parse(cached) : [];
                     return parsed.length > 0 ? parsed : DEFAULT_MEMBERS;
                 } catch {
@@ -605,14 +622,14 @@
 
             const [activities, setActivities] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_activities_v6.2');
+                    const cached = localStorage.getItem('impr_activities_v6.4');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
 
             const [tasks, setTasks] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_tasks_v6.2');
+                    const cached = localStorage.getItem('impr_tasks_v6.4');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
@@ -629,21 +646,19 @@
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
-            // Ensure members has defaults
             useEffect(() => {
                 if (members.length === 0) {
                     setMembers(DEFAULT_MEMBERS);
                 }
             }, [members]);
 
-            // Save to LocalStorage using v6.2 key
             useEffect(() => {
                 if (activities && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v6.2', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v6.2', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v6.4', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v6.4', JSON.stringify(tasks));
                 }
                 if (members && members.length > 0) {
-                    localStorage.setItem('impr_team_v6.2', JSON.stringify(members));
+                    localStorage.setItem('impr_team_v6.4', JSON.stringify(members));
                 }
             }, [activities, tasks, members]);
 
@@ -652,17 +667,17 @@
                 if (activities.length === 0 || tasks.length === 0) {
                     setTimeout(() => {
                         const defaultActs = [
-                            { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01', assignee: 'joseph' },
-                            { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-20', assignee: 'joseph' },
-                            { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-12', assignee: 'joseph' },
-                            { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '', status: '進行中', startDate: '2026-02-18', endDate: '2026-03-13', assignee: 'joseph' }
+                            { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01' },
+                            { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-20' },
+                            { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-12' },
+                            { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '', status: '進行中', startDate: '2026-02-18', endDate: '2026-03-13' }
                         ];
                         setActivities(defaultActs);
                         
                         let allTasks = [];
                         defaultActs.forEach(act => {
                             SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: 'joseph', dueDate: act.endDate, note: '' }));
-                            ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: 'joseph', dueDate: act.endDate, note: '' }));
+                            ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: 'arlena', dueDate: act.endDate, note: '' }));
                         });
                         setTasks(allTasks);
                         setLoading(false);
@@ -679,7 +694,7 @@
                 setTimeout(() => {
                     const activeMembers = members.length > 0 ? members : DEFAULT_MEMBERS;
                     const foundUser = activeMembers.find(m => 
-                        (m.username === u || m.name.toLowerCase() === u.toLowerCase()) && 
+                        (m.username.toLowerCase() === u.toLowerCase() || m.name.toLowerCase() === u.toLowerCase()) && 
                         (m.password === p)
                     );
                     
@@ -759,7 +774,7 @@
                 return 0;
             };
 
-            const DetailModal = ({ actId, onCreateTask }) => {
+            const DetailModal = ({ actId, onCreateTask, members }) => {
                 const data = useMemo(() => {
                     const actTasks = tasks.filter(t => t.activityId === actId);
                     const subTasks = actTasks.filter(c => c.isApplicable && String(c.code).includes('.'));
@@ -806,8 +821,8 @@
                                 </div>
                             )}
                             <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50/50 no-scrollbar space-y-8 pb-20">
-                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-impr-orange">場勘查核 (Survey)</h4><TaskHierarchy tasks={surveyTasks} user={user} onUpdate={handleUpdate} /></div>
-                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-blue-500">專案籌備 (Item)</h4><TaskHierarchy tasks={itemTasks} user={user} onUpdate={handleUpdate} /></div>
+                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-impr-orange">場勘查核 (Survey)</h4><TaskHierarchy tasks={surveyTasks} user={user} members={members} onUpdate={handleUpdate} /></div>
+                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-blue-500">專案籌備 (Item)</h4><TaskHierarchy tasks={itemTasks} user={user} members={members} onUpdate={handleUpdate} /></div>
                             </div>
                         </div>
                     </div>
@@ -896,7 +911,7 @@
                             </div>
                         </div>
                     )}
-                    {selAct && <DetailModal actId={selAct} onCreateTask={handleCreateTask} />}
+                    {selAct && <DetailModal actId={selAct} onCreateTask={handleCreateTask} members={members} />}
                 </div>
             );
         };
