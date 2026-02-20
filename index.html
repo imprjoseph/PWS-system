@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v6.0</title>
+    <title>IMPR 專案管考系統 - 企業版 v6.1</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -197,7 +197,7 @@
             { code: '11.7', name: '張貼與撤場時間規劃' }
         ];
 
-        // 3. 預設名單 (依據 LIST.csv)
+        // 3. 預設名單 (精確依據 LIST.csv)
         const DEFAULT_MEMBERS = [
             { id: 1, username: 'joseph', password: '123', role: 'admin', name: 'joseph' },
             { id: 2, username: 'Arlena', password: '123', role: 'staff', name: 'arlena' }
@@ -341,7 +341,7 @@
             };
 
             const memberStats = teamMembers.map(member => {
-                const memberTasks = tasks.filter(t => t.assignee === member.name);
+                const memberTasks = tasks.filter(t => t.assignee === member.name || t.assignee === member.username);
                 const completedCount = memberTasks.filter(t => t.status === 100).length;
                 const ongoingCount = memberTasks.filter(t => t.status < 100).length;
                 return { name: member.name, completed: completedCount, ongoing: ongoingCount };
@@ -523,7 +523,7 @@
 
             const checkPermission = (assigneeName) => {
                 if (user.role === 'admin') return true;
-                return user.name === assigneeName;
+                return user.name.toLowerCase() === (assigneeName || '').toLowerCase();
             };
 
             return (
@@ -584,9 +584,32 @@
 
         const App = () => {
             const [user, setUser] = useState(null);
-            const [activities, setActivities] = useState([]);
-            const [tasks, setTasks] = useState([]);
-            const [members, setMembers] = useState([]);
+            
+            // 獨立的狀態宣告，並在第一次就從 cache 中讀取 (防止空陣列清空快取)
+            const [members, setMembers] = useState(() => {
+                try {
+                    const cached = localStorage.getItem('impr_team_v6.1');
+                    const parsed = cached ? JSON.parse(cached) : [];
+                    return parsed.length > 0 ? parsed : DEFAULT_MEMBERS;
+                } catch {
+                    return DEFAULT_MEMBERS;
+                }
+            });
+
+            const [activities, setActivities] = useState(() => {
+                try {
+                    const cached = localStorage.getItem('impr_activities_v6.1');
+                    return cached ? JSON.parse(cached) : [];
+                } catch { return []; }
+            });
+
+            const [tasks, setTasks] = useState(() => {
+                try {
+                    const cached = localStorage.getItem('impr_tasks_v6.1');
+                    return cached ? JSON.parse(cached) : [];
+                } catch { return []; }
+            });
+
             const [loading, setLoading] = useState(false);
             const [selAct, setSelAct] = useState(null);
             const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -599,55 +622,45 @@
 
             useEffect(() => { if (window.lucide) window.lucide.createIcons(); });
 
-            // Initialize members from localstorage or use defaults matching LIST.csv
+            // 單向保存邏輯：只有當有資料時才覆寫 LocalStorage
             useEffect(() => {
-                const cachedMembers = localStorage.getItem('impr_team_v6.0');
-                if (cachedMembers) {
-                    setMembers(JSON.parse(cachedMembers));
-                } else {
-                    setMembers(DEFAULT_MEMBERS);
+                if (members && members.length > 0) {
+                    localStorage.setItem('impr_team_v6.1', JSON.stringify(members));
                 }
-            }, []);
+            }, [members]);
 
-            // Save to LocalStorage using v6.0 key
             useEffect(() => {
-                if (user && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v6.0', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v6.0', JSON.stringify(tasks));
+                if (activities && activities.length > 0) {
+                    localStorage.setItem('impr_activities_v6.1', JSON.stringify(activities));
                 }
-                if (members.length > 0) {
-                    localStorage.setItem('impr_team_v6.0', JSON.stringify(members));
+                if (tasks && tasks.length > 0) {
+                    localStorage.setItem('impr_tasks_v6.1', JSON.stringify(tasks));
                 }
-            }, [activities, tasks, members, user]);
+            }, [activities, tasks]);
 
-            const fetchData = async (currUser) => {
+            const fetchData = async () => {
                 setLoading(true);
-                const cachedActs = localStorage.getItem('impr_activities_v6.0');
-                const cachedTasks = localStorage.getItem('impr_tasks_v6.0');
-
-                if (cachedActs && cachedTasks) {
-                    setActivities(JSON.parse(cachedActs));
-                    setTasks(JSON.parse(cachedTasks));
-                    setLoading(false);
-                } else {
+                // 檢查是否為空，若為空則寫入 ACTIVITY.csv 與 TASKS 的預設值
+                if (activities.length === 0 || tasks.length === 0) {
                     setTimeout(() => {
-                        // Matching ACTIVITY.csv exactly
                         const defaultActs = [
-                            { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01' },
-                            { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-20' },
-                            { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-12' },
-                            { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '', status: '進行中', startDate: '2026-02-18', endDate: '2026-03-13' }
+                            { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01', assignee: 'joseph' },
+                            { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-20', assignee: 'joseph' },
+                            { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-12', assignee: 'joseph' },
+                            { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '', status: '進行中', startDate: '2026-02-18', endDate: '2026-03-13', assignee: 'joseph' }
                         ];
                         setActivities(defaultActs);
                         
                         let allTasks = [];
                         defaultActs.forEach(act => {
-                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: i % 2 === 0 ? 100 : 0, isApplicable: true, assignee: 'joseph', dueDate: i < 3 ? '2024-01-01' : '', note: '' }));
-                            ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: i % 3 === 0 ? 100 : 0, isApplicable: true, assignee: 'joseph', dueDate: '', note: '' }));
+                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: 'joseph', dueDate: act.endDate, note: '' }));
+                            ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: 'joseph', dueDate: act.endDate, note: '' }));
                         });
                         setTasks(allTasks);
                         setLoading(false);
                     }, 800);
+                } else {
+                    setLoading(false);
                 }
             };
 
@@ -656,17 +669,15 @@
                 setLoading(true);
                 
                 setTimeout(() => {
-                    // Match with active members exactly
                     const activeMembers = members.length > 0 ? members : DEFAULT_MEMBERS;
-
                     const foundUser = activeMembers.find(m => 
-                        (m.username === u || m.name.toLowerCase() === u.toLowerCase()) && 
+                        (m.username.toLowerCase() === u.toLowerCase() || m.name.toLowerCase() === u.toLowerCase()) && 
                         (m.password === p)
                     );
                     
                     if (foundUser) {
                         setUser({ name: foundUser.name, role: foundUser.role });
-                        fetchData({ name: foundUser.name, role: foundUser.role });
+                        fetchData();
                     } else {
                         setError('帳號或密碼錯誤');
                         setLoading(false);
@@ -687,8 +698,8 @@
                 const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', location: form.location, status: '籌備中', startDate: form.startDate, endDate: form.endDate };
                 
                 let newTasks = [];
-                SURVEY_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_s_${i}`, activityId: newActId, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: user.name, dueDate: '', note: '' }));
-                ITEM_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_i_${i}`, activityId: newActId, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: user.name, dueDate: '', note: '' }));
+                SURVEY_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_s_${i}`, activityId: newActId, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: user.name, dueDate: form.endDate, note: '' }));
+                ITEM_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_i_${i}`, activityId: newActId, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: user.name, dueDate: form.endDate, note: '' }));
 
                 setTimeout(() => { 
                     setActivities(prev => [newAct, ...prev]);
