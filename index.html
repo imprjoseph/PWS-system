@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v5.5</title>
+    <title>IMPR 專案管考系統 - 企業版 v5.7</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -681,31 +681,36 @@
 
             useEffect(() => {
                 // Initialize members from simulated LIST.csv data if not in cache
-                const cachedMembers = localStorage.getItem('impr_team_v5.6');
+                const cachedMembers = localStorage.getItem('impr_team_v5.7');
                 if (cachedMembers) {
                     setMembers(JSON.parse(cachedMembers));
-                } else {
-                    setMembers([
-                        { id: 1, name: 'joseph', role: 'admin', email: 'joseph@impr.com', phone: '' },
-                        { id: 2, name: 'arlena', role: 'staff', email: 'arlena@impr.com', phone: '' }
-                    ]);
                 }
+                // (移除 else 區塊寫死的預設資料，改在 fetchData 中載入，以模擬從雲端抓取)
             }, []);
 
             useEffect(() => {
                 if (user && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v5.6', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v5.6', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v5.7', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v5.7', JSON.stringify(tasks));
                 }
                 if (members.length > 0) {
-                    localStorage.setItem('impr_team_v5.6', JSON.stringify(members));
+                    localStorage.setItem('impr_team_v5.7', JSON.stringify(members));
                 }
             }, [activities, tasks, members, user]);
 
             const fetchData = async (currUser) => {
                 setLoading(true);
-                const cachedActs = localStorage.getItem('impr_activities_v5.6');
-                const cachedTasks = localStorage.getItem('impr_tasks_v5.6');
+                const cachedActs = localStorage.getItem('impr_activities_v5.7');
+                const cachedTasks = localStorage.getItem('impr_tasks_v5.7');
+                const cachedMembers = localStorage.getItem('impr_team_v5.7');
+
+                // 模擬從 LIST.csv 取資料
+                if (!cachedMembers) {
+                    setMembers([
+                        { id: 1, name: 'joseph', role: 'admin', email: 'joseph@impr.com', phone: '' },
+                        { id: 2, name: 'arlena', role: 'staff', email: 'arlena@impr.com', phone: '' }
+                    ]);
+                }
 
                 if (cachedActs && cachedTasks) {
                     setActivities(JSON.parse(cachedActs));
@@ -735,15 +740,23 @@
             const handleLogin = (u, p) => {
                 if(!u) return setError('請輸入帳號');
                 setLoading(true);
+                
                 setTimeout(() => {
-                    let mockUser;
-                    // Updated login validation to match LIST.csv
-                    if(u.toLowerCase() === 'joseph') mockUser = { name: 'joseph', role: 'admin' };
-                    else if(u.toLowerCase() === 'arlena') mockUser = { name: 'arlena', role: 'staff' };
-                    else return setError('帳號錯誤');
+                    // 使用當前的 members 列表來驗證登入 (模擬連線資料庫驗證)
+                    const existingMembers = members.length > 0 ? members : [
+                        { id: 1, name: 'joseph', role: 'admin', email: '', phone: '' },
+                        { id: 2, name: 'arlena', role: 'staff', email: '', phone: '' }
+                    ];
+
+                    const foundUser = existingMembers.find(m => m.name.toLowerCase() === u.toLowerCase());
                     
-                    setUser(mockUser);
-                    fetchData(mockUser);
+                    if (foundUser) {
+                        setUser({ name: foundUser.name, role: foundUser.role });
+                        fetchData({ name: foundUser.name, role: foundUser.role });
+                    } else {
+                        setError('帳號不存在於團隊名單中，請聯絡管理員');
+                        setLoading(false);
+                    }
                 }, 500);
             };
 
@@ -841,7 +854,7 @@
                 return (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-md">
                         <div className="bg-white w-full h-full sm:h-[90vh] sm:max-w-5xl sm:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-10">
-                            <div className="px-4 py-3 sm:px-8 sm:py-5 border-b flex justify-between items-center bg-white z-10 shadow-sm">
+                            <div className="px-4 py-3 sm:px-8 py-5 border-b flex justify-between items-center bg-white z-10 shadow-sm">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-slate-100 rounded-xl hidden sm:block"><i data-lucide="layers" className="text-impr-orange w-5 h-5"></i></div>
                                     <div><h3 className="text-lg sm:text-xl font-black text-slate-800 italic tracking-tight">任務明細</h3><p className="text-xs text-slate-400 font-bold">總進度：<span className="text-impr-orange font-black text-sm">{data.progress}%</span></p></div>
