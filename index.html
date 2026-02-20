@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v6.5</title>
+    <title>IMPR 專案管考系統 - 企業版 v7.1</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -100,15 +100,13 @@
         const logoUrl = "logo.png";
         
         // ---------------------------------------------------------
-        // 🚀 將您部署後的 GAS Web App 網址貼在這裡，即可連動 Google Sheet
-        // 例如：const GAS_API_URL = "https://script.google.com/macros/s/.../exec";
-        const GAS_API_URL = ""; 
+        // 🚀 Google Sheet 真實 API 網址 (已綁定您專屬的 Web App URL)
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx9VoZwkmlDoL-3uCirDrqF_N66Ti00WWe3J-f7IQbwP9awhtx8lrPyJshla3dRP3h8/exec"; 
         // ---------------------------------------------------------
         
-        // --- 1. 預設名單 (嚴格對照 LIST.csv) ---
+        // --- 1. 預設名單 (當網路異常或初次載入時的墊檔資料，精確對照您的 LIST.csv) ---
         const DEFAULT_MEMBERS = [
-            { id: 1, username: 'Joseph', password: '123', role: 'admin', name: 'Joseph' },
-            { id: 2, username: 'Arlena', password: '123', role: 'staff', name: 'Arlena' }
+            { id: 1, username: 'joseph', password: '123', role: 'admin', name: 'joseph' },
         ];
 
         // --- 2. 範本設定 (精確對照 SURVEY_TEMPLATE.csv) ---
@@ -215,16 +213,16 @@
             </svg>
         );
 
-        // --- 支援真實 GAS 連線的輔助函式 ---
+        // --- API 呼叫模組 (支援跨域) ---
         const callGAS = async (payload) => { 
             if (!GAS_API_URL) {
-                console.log("模擬 API (未設定 GAS_API_URL):", payload); 
+                console.warn("未設定 GAS_API_URL，使用本地模擬模式"); 
                 return { status: 'success' }; 
             }
             try {
                 const response = await fetch(GAS_API_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 避免 CORS preflight
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
                 return await response.json();
@@ -247,8 +245,8 @@
                         </div>
                         <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-8 tracking-tight italic">專案進度管考系統</h2>
                         <div className="space-y-3">
-                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Username (如: Joseph)" />
-                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Password (預設: 123)" />
+                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Username (如: joseph / Arlena)" />
+                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Password (如: 123)" />
                         </div>
                         {error && <div className="text-red-500 text-xs font-bold mt-4">{error}</div>}
                         <button onClick={() => onLogin(u, p)} disabled={loading} className="w-full mt-8 py-3.5 sm:py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 transition-all shadow-lg active:scale-95">{loading ? "連線中..." : "登入系統"}</button>
@@ -362,7 +360,7 @@
             };
 
             const memberStats = teamMembers.map(member => {
-                const memberTasks = tasks.filter(t => t.assignee === member.name || t.assignee === member.username);
+                const memberTasks = tasks.filter(t => (t.assignee || '').toLowerCase() === member.name.toLowerCase() || (t.assignee || '').toLowerCase() === member.username.toLowerCase());
                 const completedCount = memberTasks.filter(t => t.status === 100).length;
                 const ongoingCount = memberTasks.filter(t => t.status < 100).length;
                 return { name: member.name, completed: completedCount, ongoing: ongoingCount };
@@ -434,7 +432,6 @@
             );
         };
 
-        // --- 元件: 團隊管理 ---
         const TeamManager = ({ members, setMembers }) => {
             const [isEditing, setIsEditing] = useState(false);
             const [editId, setEditId] = useState(null);
@@ -442,12 +439,18 @@
 
             const handleSubmit = () => {
                 if(!formData.username || !formData.name) return alert('Username與Name為必填');
+                
+                let updatedMembers;
                 if (editId) {
-                    setMembers(prev => prev.map(m => m.id === editId ? { ...m, ...formData } : m));
+                    updatedMembers = members.map(m => m.id === editId ? { ...m, ...formData } : m);
+                    callGAS({ action: 'updateMember', oldUsername: members.find(m => m.id === editId).username, ...formData });
                 } else {
                     const newMember = { id: Date.now(), ...formData };
-                    setMembers(prev => [...prev, newMember]);
+                    updatedMembers = [...members, newMember];
+                    callGAS({ action: 'addMember', ...formData });
                 }
+                
+                setMembers(updatedMembers);
                 resetForm();
             };
 
@@ -459,7 +462,9 @@
 
             const handleDelete = (id) => {
                 if(confirm('確定刪除此成員？')) {
+                    const memberToDelete = members.find(m => m.id === id);
                     setMembers(prev => prev.filter(m => m.id !== id));
+                    callGAS({ action: 'deleteMember', username: memberToDelete.username });
                 }
             };
 
@@ -508,7 +513,6 @@
             );
         };
 
-        // --- 核心：與團隊名單連動的任務元件 ---
         const TaskHierarchy = ({ tasks, user, members, onUpdate }) => {
             const { parents, childrenMap } = useMemo(() => {
                 const parents = [];
@@ -574,7 +578,6 @@
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                                             <div className="md:col-span-2 relative">
                                                 <i data-lucide="user" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i>
-                                                {/* 與團隊名單連動的下拉選單 */}
                                                 <select 
                                                     value={parent.assignee || ''} 
                                                     disabled={!canEditParent} 
@@ -633,7 +636,7 @@
             
             const [members, setMembers] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_team_v6.5');
+                    const cached = localStorage.getItem('impr_team_v7.1');
                     const parsed = cached ? JSON.parse(cached) : [];
                     return parsed.length > 0 ? parsed : DEFAULT_MEMBERS;
                 } catch {
@@ -643,14 +646,14 @@
 
             const [activities, setActivities] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_activities_v6.5');
+                    const cached = localStorage.getItem('impr_activities_v7.1');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
 
             const [tasks, setTasks] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_tasks_v6.5');
+                    const cached = localStorage.getItem('impr_tasks_v7.1');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
@@ -675,36 +678,51 @@
 
             useEffect(() => {
                 if (activities && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v6.5', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v6.5', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v7.1', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v7.1', JSON.stringify(tasks));
                 }
                 if (members && members.length > 0) {
-                    localStorage.setItem('impr_team_v6.5', JSON.stringify(members));
+                    localStorage.setItem('impr_team_v7.1', JSON.stringify(members));
                 }
             }, [activities, tasks, members]);
 
-            const fetchData = async () => {
+            const fetchData = async (currUser = user) => {
                 setLoading(true);
-                if (activities.length === 0 || tasks.length === 0) {
-                    setTimeout(() => {
-                        const defaultActs = [
-                            { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01', assignee: 'Joseph' },
-                            { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-20', assignee: 'Joseph' },
-                            { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-12', assignee: 'Joseph' },
-                            { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '', status: '進行中', startDate: '2026-02-18', endDate: '2026-03-13', assignee: 'Joseph' }
-                        ];
-                        setActivities(defaultActs);
-                        
-                        let allTasks = [];
-                        defaultActs.forEach(act => {
-                            SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: 'Joseph', dueDate: act.endDate, note: '' }));
-                            ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: 'Joseph', dueDate: act.endDate, note: '' }));
-                        });
-                        setTasks(allTasks);
-                        setLoading(false);
-                    }, 800);
-                } else {
+                
+                if (GAS_API_URL) {
+                    // 🚀 正式連線取得資料 (從您的 Google Sheet 讀取)
+                    const res = await callGAS({ action: 'getData', role: currUser?.role, name: currUser?.name });
+                    if (res.status === 'success') {
+                        if (res.members && res.members.length > 0) setMembers(res.members);
+                        setActivities(res.activities || []);
+                        setTasks(res.tasks || []);
+                    } else {
+                        setError(res.message || '資料讀取失敗');
+                    }
                     setLoading(false);
+                } else {
+                    // 💻 本地端模擬模式 (如果沒有填寫 GAS URL)
+                    if (activities.length === 0 || tasks.length === 0) {
+                        setTimeout(() => {
+                            const defaultActs = [
+                                { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01' },
+                                { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-20' },
+                                { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-12' },
+                                { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '', status: '進行中', startDate: '2026-02-18', endDate: '2026-03-13' }
+                            ];
+                            setActivities(defaultActs);
+                            
+                            let allTasks = [];
+                            defaultActs.forEach(act => {
+                                SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: 'joseph', dueDate: act.endDate, note: '' }));
+                                ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: 'joseph', dueDate: act.endDate, note: '' }));
+                            });
+                            setTasks(allTasks);
+                            setLoading(false);
+                        }, 800);
+                    } else {
+                        setLoading(false);
+                    }
                 }
             };
 
@@ -712,22 +730,33 @@
                 if(!u || !p) return setError('請輸入帳號與密碼');
                 setLoading(true);
                 
-                // --- 若有提供 GAS_API_URL 則可擴充真實驗證，目前使用前端模擬驗證 ---
-                setTimeout(() => {
-                    const activeMembers = members.length > 0 ? members : DEFAULT_MEMBERS;
-                    const foundUser = activeMembers.find(m => 
-                        (m.username.toLowerCase() === u.toLowerCase() || m.name.toLowerCase() === u.toLowerCase()) && 
-                        (m.password === p)
-                    );
-                    
-                    if (foundUser) {
-                        setUser({ name: foundUser.name, role: foundUser.role });
-                        fetchData();
+                if (GAS_API_URL) {
+                    // 🚀 透過 API 驗證登入
+                    const res = await callGAS({ action: 'login', username: u, password: p });
+                    if (res.status === 'success') {
+                        setUser(res.user);
+                        fetchData(res.user);
                     } else {
-                        setError('帳號或密碼錯誤');
+                        setError(res.message || '帳號或密碼錯誤');
                         setLoading(false);
                     }
-                }, 500);
+                } else {
+                    setTimeout(() => {
+                        const activeMembers = members.length > 0 ? members : DEFAULT_MEMBERS;
+                        const foundUser = activeMembers.find(m => 
+                            (m.username.toLowerCase() === u.toLowerCase() || m.name.toLowerCase() === u.toLowerCase()) && 
+                            (m.password === p)
+                        );
+                        
+                        if (foundUser) {
+                            setUser({ name: foundUser.name, role: foundUser.role });
+                            fetchData({ name: foundUser.name, role: foundUser.role });
+                        } else {
+                            setError('帳號或密碼錯誤 (未設定 API 時，預設密碼為 123)');
+                            setLoading(false);
+                        }
+                    }, 500);
+                }
             };
 
             const handleUpdate = async (tId, updates) => {
@@ -738,13 +767,15 @@
             const handleCreate = async () => {
                 if(!form.name) return;
                 setLoading(true);
-                await callGAS({ action: 'createActivity', ...form, manager: user.name });
+                
                 const newActId = 'ACT-' + Date.now();
                 const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', location: form.location, status: '籌備中', startDate: form.startDate, endDate: form.endDate };
                 
                 let newTasks = [];
                 SURVEY_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_s_${i}`, activityId: newActId, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: user.name, dueDate: form.endDate, note: '' }));
                 ITEM_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_i_${i}`, activityId: newActId, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: user.name, dueDate: form.endDate, note: '' }));
+
+                await callGAS({ action: 'createActivity', ...form, manager: user.name });
 
                 setTimeout(() => { 
                     setActivities(prev => [newAct, ...prev]);
