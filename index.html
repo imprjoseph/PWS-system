@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v8.4</title>
+    <title>IMPR 專案管考系統 - 企業版 v8.5</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -104,7 +104,7 @@
         // ---------------------------------------------------------
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx9VoZwkmlDoL-3uCirDrqF_N66Ti00WWe3J-f7IQbwP9awhtx8lrPyJshla3dRP3h8/exec"; 
         
-        // --- 1. 預設名單 (已移除 Arlena，徹底消滅假資料) ---
+        // --- 1. 預設名單 (已移除假資料) ---
         const DEFAULT_MEMBERS = [
             { id: 1, username: 'Joseph', password: '123', role: 'admin', name: 'Joseph' }
         ];
@@ -258,7 +258,7 @@
                         <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-8 tracking-tight italic">專案進度管考系統</h2>
                         <div className="space-y-3">
                             <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Username (如: Joseph)" />
-                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Password (預設: 123)" />
+                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Password (如: 123)" />
                         </div>
                         {error && <div className="text-red-500 text-xs font-bold mt-4 bg-red-50 p-2 rounded">{error}</div>}
                         <button onClick={() => onLogin(u, p)} disabled={loading} className="w-full mt-8 py-3.5 sm:py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 transition-all shadow-lg active:scale-95">{loading ? "連線驗證中..." : "登入系統"}</button>
@@ -527,7 +527,7 @@
             );
         };
 
-        // --- 核心：與團隊名單連動的任務元件 ---
+        // --- 核心：與團隊名單連動的任務元件 (支援連動變更) ---
         const TaskHierarchy = ({ tasks, user, members, onUpdate }) => {
             const { parents, childrenMap } = useMemo(() => {
                 const parents = [];
@@ -593,16 +593,14 @@
                                 <div className="p-3 sm:p-4 space-y-3 bg-white">
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                                            
+                                            {/* 母任務指派 (改變時會連帶更新子任務) */}
                                             <div className="md:col-span-2 relative flex items-center bg-white border border-slate-200 rounded-xl px-2">
                                                 <i data-lucide="user" className="w-3.5 h-3.5 text-slate-400 mr-1 flex-shrink-0"></i>
                                                 <select 
                                                     value={getAssigneeValue(members, parent.assignee)} 
                                                     disabled={!canEditParent} 
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    onChange={(e) => {
-                                                        e.stopPropagation();
-                                                        onUpdate(parent.id, { assignee: e.target.value });
-                                                    }} 
+                                                    onChange={(e) => onUpdate(parent.id, { assignee: e.target.value })} 
                                                     className="w-full bg-transparent py-2.5 text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none disabled:cursor-not-allowed"
                                                 >
                                                     <option value="">未指派</option>
@@ -615,9 +613,9 @@
                                                 <i data-lucide="chevron-down" className="w-3 h-3 text-slate-400 flex-shrink-0 pointer-events-none"></i>
                                             </div>
                                             
-                                            <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} disabled={!canEditParent} onClick={(e) => e.stopPropagation()} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className={`editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold border border-slate-200 outline-none ${isParentDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
-                                            <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200"><input type="range" min="0" max="100" step="10" defaultValue={parent.status} disabled={children.length > 0 || !canEditParent} onClick={(e) => e.stopPropagation()} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span></div>
-                                            <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.note} disabled={!canEditParent} onClick={(e) => e.stopPropagation()} onBlur={(e) => onUpdate(parent.id, { note: e.target.value })} className="editable-field w-full bg-white pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-slate-200 outline-none" placeholder="備註..." /></div>
+                                            <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className={`editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold border border-slate-200 outline-none ${isParentDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
+                                            <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200"><input type="range" min="0" max="100" step="10" defaultValue={parent.status} disabled={children.length > 0 || !canEditParent} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span></div>
+                                            <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.note} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { note: e.target.value })} className="editable-field w-full bg-white pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-slate-200 outline-none" placeholder="備註..." /></div>
                                         </div>
                                     </div>
                                     {children.map(child => {
@@ -627,22 +625,18 @@
                                         <div key={child.id} className={`p-4 rounded-xl border transition-all ${child.isApplicable ? `bg-white hover:border-slate-300 shadow-sm ${isChildDelayed ? 'border-impr-danger/30 bg-red-50/10' : 'border-slate-100'}` : 'bg-slate-50 border-transparent opacity-50'}`}>
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                                                 <div className="flex items-center gap-3"><span className="text-slate-400 font-mono text-xs font-bold w-8 text-right">{child.code}</span><span className={`font-bold text-sm ${child.isApplicable ? 'text-slate-700' : 'line-through text-slate-400'}`}>{child.name}</span>{isChildDelayed && <span className="text-[9px] text-white bg-impr-danger px-1.5 py-0.5 rounded ml-2 flex items-center gap-0.5"><i data-lucide="alert-circle" className="w-2.5 h-2.5"></i> 延遲</span>}</div>
-                                                <button disabled={!canEditChild} onClick={(e) => { e.stopPropagation(); onUpdate(child.id, { isApplicable: !child.isApplicable }); }} className={`self-start sm:self-auto px-2 py-1 rounded text-[10px] font-bold border transition-colors ${child.isApplicable ? 'text-slate-400 border-slate-200' : 'bg-slate-600 text-white border-slate-600'} ${!canEditChild ? 'opacity-50 cursor-not-allowed' : ''}`}>{child.isApplicable ? "設為不適用" : "恢復適用"}</button>
+                                                <button disabled={!canEditChild} onClick={() => onUpdate(child.id, { isApplicable: !child.isApplicable })} className={`self-start sm:self-auto px-2 py-1 rounded text-[10px] font-bold border transition-colors ${child.isApplicable ? 'text-slate-400 border-slate-200' : 'bg-slate-600 text-white border-slate-600'} ${!canEditChild ? 'opacity-50 cursor-not-allowed' : ''}`}>{child.isApplicable ? "設為不適用" : "恢復適用"}</button>
                                             </div>
                                             {child.isApplicable && (
                                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pl-0 sm:pl-11">
                                                     
-                                                    {/* --- 單一任務負責人下拉選單 --- */}
+                                                    {/* --- 單一任務指派 (移除干擾事件，修復下拉 Bug) --- */}
                                                     <div className="md:col-span-2 relative flex items-center bg-slate-50 border border-transparent hover:border-slate-200 transition-colors rounded-xl px-2">
                                                         <i data-lucide="user" className="w-3 h-3 text-slate-400 mr-1 flex-shrink-0"></i>
                                                         <select 
                                                             value={getAssigneeValue(members, child.assignee)} 
                                                             disabled={!canEditChild} 
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            onChange={(e) => {
-                                                                e.stopPropagation();
-                                                                onUpdate(child.id, { assignee: e.target.value });
-                                                            }} 
+                                                            onChange={(e) => onUpdate(child.id, { assignee: e.target.value })} 
                                                             className="w-full bg-transparent py-2 text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none disabled:cursor-not-allowed"
                                                         >
                                                             <option value="">未指派</option>
@@ -655,9 +649,9 @@
                                                         <i data-lucide="chevron-down" className="w-3 h-3 text-slate-400 flex-shrink-0 pointer-events-none"></i>
                                                     </div>
                                                     
-                                                    <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} disabled={!canEditChild} onClick={(e) => e.stopPropagation()} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className={`editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold border border-transparent outline-none ${isChildDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
-                                                    <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent"><input type="range" min="0" max="100" step="10" defaultValue={child.status} disabled={!canEditChild} onClick={(e) => e.stopPropagation()} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className={`text-xs font-black w-8 text-right font-mono ${isChildDelayed ? 'text-impr-danger' : 'text-impr-orange'}`}>{child.status}%</span></div>
-                                                    <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3 h-3 text-slate-300"></i><input type="text" defaultValue={child.note} disabled={!canEditChild} onClick={(e) => e.stopPropagation()} onBlur={(e) => onUpdate(child.id, { note: e.target.value })} className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2 rounded-xl text-xs text-slate-600 border border-transparent outline-none" placeholder="備註..." /></div>
+                                                    <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className={`editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold border border-transparent outline-none ${isChildDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
+                                                    <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent"><input type="range" min="0" max="100" step="10" defaultValue={child.status} disabled={!canEditChild} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className={`text-xs font-black w-8 text-right font-mono ${isChildDelayed ? 'text-impr-danger' : 'text-impr-orange'}`}>{child.status}%</span></div>
+                                                    <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3 h-3 text-slate-300"></i><input type="text" defaultValue={child.note} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { note: e.target.value })} className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2 rounded-xl text-xs text-slate-600 border border-transparent outline-none" placeholder="備註..." /></div>
                                                 </div>
                                             )}
                                         </div>
@@ -741,9 +735,10 @@
         const App = () => {
             const [user, setUser] = useState(null);
             
+            // 強制清空快取金鑰 v8.5
             const [members, setMembers] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_team_v8.4');
+                    const cached = localStorage.getItem('impr_team_v8.5');
                     const parsed = cached ? JSON.parse(cached) : null;
                     return parsed && parsed.length > 0 ? parsed : [];
                 } catch { return []; }
@@ -751,14 +746,14 @@
 
             const [activities, setActivities] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_activities_v8.4');
+                    const cached = localStorage.getItem('impr_activities_v8.5');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
 
             const [tasks, setTasks] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_tasks_v8.4');
+                    const cached = localStorage.getItem('impr_tasks_v8.5');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
@@ -777,11 +772,11 @@
 
             useEffect(() => {
                 if (activities && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v8.4', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v8.4', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v8.5', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v8.5', JSON.stringify(tasks));
                 }
                 if (members && members.length > 0) {
-                    localStorage.setItem('impr_team_v8.4', JSON.stringify(members));
+                    localStorage.setItem('impr_team_v8.5', JSON.stringify(members));
                 }
             }, [activities, tasks, members]);
 
@@ -792,7 +787,7 @@
                     const res = await callGAS({ action: 'getData', role: currUser?.role, name: currUser?.name });
                     if (res.status === 'success') {
                         if (res.members !== undefined) {
-                            setMembers(res.members); // 無條件覆寫，資料庫裡有誰就顯示誰
+                            setMembers(res.members); // 無條件以 Sheet 為準
                         }
                         setActivities(res.activities || []);
                         setTasks(res.tasks || []);
@@ -858,14 +853,66 @@
                 }
             };
 
+            // --- 修改：處理母任務連動子任務邏輯 ---
             const handleUpdateTask = async (tId, updates) => {
-                setTasks(prev => prev.map(t => t.id === tId ? { ...t, ...updates } : t));
+                const targetTask = tasks.find(t => t.id === tId);
+                const isParent = targetTask && !String(targetTask.code).includes('.');
+
+                // 1. 本地狀態即時更新 (包含連動邏輯)
+                setTasks(prev => {
+                    let newTasks = [...prev];
+                    
+                    // 更新當下被點擊的任務
+                    newTasks = newTasks.map(t => t.id === tId ? { ...t, ...updates } : t);
+
+                    // 如果是母任務且更新了負責人，連帶更新所有底下的子任務
+                    if (isParent && updates.assignee !== undefined) {
+                        newTasks = newTasks.map(t => {
+                            if (t.activityId === targetTask.activityId && 
+                                String(t.code).startsWith(targetTask.code + '.') && 
+                                t.type === targetTask.type) {
+                                return { ...t, assignee: updates.assignee };
+                            }
+                            return t;
+                        });
+                    }
+                    return newTasks;
+                });
+
+                // 2. 伺服器更新
                 await callGAS({ action: 'updateTask', taskId: tId, ...updates });
+
+                // 如果是母任務且更新了負責人，背景分批呼叫 API 更新子任務 (避免塞車)
+                if (isParent && updates.assignee !== undefined) {
+                    const children = tasks.filter(t => t.activityId === targetTask.activityId && String(t.code).startsWith(targetTask.code + '.') && t.type === targetTask.type);
+                    children.forEach((c, idx) => {
+                        setTimeout(() => {
+                            callGAS({ action: 'updateTask', taskId: c.id, assignee: updates.assignee });
+                        }, (idx + 1) * 300); // 錯開 API 請求時間
+                    });
+                }
             };
 
+            // --- 修改：處理專案連動所有任務邏輯 ---
             const handleUpdateActivity = async (actId, updates) => {
                 setActivities(prev => prev.map(a => a.id === actId ? { ...a, ...updates } : a));
+                
+                // 若更換專案負責人，本地立刻把所有子任務的負責人刷過去
+                if (updates.assignee !== undefined) {
+                    setTasks(prev => prev.map(t => t.activityId === actId ? { ...t, assignee: updates.assignee } : t));
+                }
+
                 await callGAS({ action: 'updateActivity', activityId: actId, ...updates });
+
+                // 背景分批呼叫 API 更新該專案底下所有任務
+                if (updates.assignee !== undefined) {
+                    const actTasks = tasks.filter(t => t.activityId === actId);
+                    actTasks.forEach((t, idx) => {
+                        setTimeout(() => {
+                            callGAS({ action: 'updateTask', taskId: t.id, assignee: updates.assignee });
+                        }, (idx + 1) * 200);
+                    });
+                }
             };
 
             const handleCreate = async () => {
@@ -981,15 +1028,12 @@
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <select value={act.status} onChange={(e) => handleUpdateActivity(act.id, { status: e.target.value })} className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`} disabled={user?.role !== 'admin'}><option value="籌備中">籌備中</option><option value="進行中">進行中</option><option value="已完工">已完工</option><option value="結案">結案</option></select>
                                                         
+                                                        {/* --- 專案負責人下拉選單 --- */}
                                                         <div className="flex items-center gap-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg transition-colors cursor-pointer relative">
                                                             <i data-lucide="user" className="w-3 h-3 text-slate-400 flex-shrink-0"></i>
                                                             <select 
-                                                                onClick={(e) => e.stopPropagation()}
                                                                 value={getAssigneeValue(members, act.assignee)} 
-                                                                onChange={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleUpdateActivity(act.id, { assignee: e.target.value });
-                                                                }}
+                                                                onChange={(e) => handleUpdateActivity(act.id, { assignee: e.target.value })}
                                                                 className="bg-transparent text-[10px] font-bold text-slate-600 outline-none cursor-pointer appearance-none pr-4 w-full disabled:cursor-not-allowed"
                                                                 disabled={user?.role !== 'admin'}
                                                             >
