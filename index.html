@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v8.0</title>
+    <title>IMPR 專案管考系統 - 企業版 v8.2</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -100,13 +100,13 @@
         const logoUrl = "logo.png";
         
         // ---------------------------------------------------------
-        // 🚀 Google Sheet 真實 API 網址 (已精確綁定您的帳號)
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx9VoZwkmlDoL-3uCirDrqF_N66Ti00WWe3J-f7IQbwP9awhtx8lrPyJshla3dRP3h8/exec"; 
+        // 🚀 Google Sheet 真實 API 網址
         // ---------------------------------------------------------
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx9VoZwkmlDoL-3uCirDrqF_N66Ti00WWe3J-f7IQbwP9awhtx8lrPyJshla3dRP3h8/exec"; 
         
-        // --- 1. 預設名單 (僅保留 Joseph 避免干擾) ---
+        // --- 1. 預設名單 ---
         const DEFAULT_MEMBERS = [
-            { id: 1, username: 'Joseph', password: '123', role: 'admin', name: 'Joseph' }
+            { id: 1, username: 'joseph', password: '123', role: 'admin', name: 'joseph' }
         ];
 
         // --- 2. 範本設定 (精確對照 SURVEY_TEMPLATE.csv) ---
@@ -213,6 +213,16 @@
             </svg>
         );
 
+        // --- 輔助函式：取得正確大小寫的負責人名稱 ---
+        const getCurrentAssignee = (members, assigneeStr) => {
+            if (!assigneeStr) return "";
+            const found = members.find(m => 
+                (m.name || '').toLowerCase() === assigneeStr.toLowerCase() || 
+                (m.username || '').toLowerCase() === assigneeStr.toLowerCase()
+            );
+            return found ? found.name : assigneeStr;
+        };
+
         // --- API 呼叫模組 ---
         const callGAS = async (payload) => { 
             if (!GAS_API_URL) {
@@ -247,7 +257,7 @@
                         <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-8 tracking-tight italic">專案進度管考系統</h2>
                         <div className="space-y-3">
                             <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Username (如: Joseph)" />
-                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Password (如: 123)" />
+                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Password" />
                         </div>
                         {error && <div className="text-red-500 text-xs font-bold mt-4 bg-red-50 p-2 rounded">{error}</div>}
                         <button onClick={() => onLogin(u, p)} disabled={loading} className="w-full mt-8 py-3.5 sm:py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 transition-all shadow-lg active:scale-95">{loading ? "連線驗證中..." : "登入系統"}</button>
@@ -516,6 +526,7 @@
             );
         };
 
+        // --- 核心：與團隊名單連動的任務元件 ---
         const TaskHierarchy = ({ tasks, user, members, onUpdate }) => {
             const { parents, childrenMap } = useMemo(() => {
                 const parents = [];
@@ -552,8 +563,8 @@
             };
 
             const checkPermission = (assigneeName) => {
-                if (user.role === 'admin') return true;
-                return user.name.toLowerCase() === (assigneeName || '').toLowerCase();
+                if (user?.role === 'admin') return true;
+                return user?.name?.toLowerCase() === (assigneeName || '').toLowerCase() || user?.username?.toLowerCase() === (assigneeName || '').toLowerCase();
             };
 
             return (
@@ -579,18 +590,21 @@
                                 <div className="p-3 sm:p-4 space-y-3 bg-white">
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                                            <div className="md:col-span-2 relative">
-                                                <i data-lucide="user" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i>
+                                            {/* --- 修復焦點：負責人下拉選單 --- */}
+                                            <div className="md:col-span-2 relative flex items-center bg-white border border-slate-200 rounded-xl px-2">
+                                                <i data-lucide="user" className="w-3.5 h-3.5 text-slate-400 mr-1 flex-shrink-0"></i>
                                                 <select 
-                                                    value={parent.assignee || ''} 
+                                                    value={getCurrentAssignee(members, parent.assignee)} 
                                                     disabled={!canEditParent} 
                                                     onChange={(e) => onUpdate(parent.id, { assignee: e.target.value })} 
-                                                    className="editable-field w-full bg-white pl-9 pr-2 py-2.5 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 outline-none cursor-pointer appearance-none"
+                                                    className="w-full bg-transparent py-2.5 text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none"
                                                 >
                                                     <option value="">未指派</option>
                                                     {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                                                 </select>
+                                                <i data-lucide="chevron-down" className="w-3 h-3 text-slate-400 flex-shrink-0 pointer-events-none"></i>
                                             </div>
+                                            
                                             <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className={`editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold border border-slate-200 outline-none ${isParentDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
                                             <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200"><input type="range" min="0" max="100" step="10" defaultValue={parent.status} disabled={children.length > 0 || !canEditParent} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span></div>
                                             <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.note} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { note: e.target.value })} className="editable-field w-full bg-white pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-slate-200 outline-none" placeholder="備註..." /></div>
@@ -607,18 +621,22 @@
                                             </div>
                                             {child.isApplicable && (
                                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pl-0 sm:pl-11">
-                                                    <div className="md:col-span-2 relative">
-                                                        <i data-lucide="user" className="absolute left-3 top-3 w-3 h-3 text-slate-400"></i>
+                                                    
+                                                    {/* --- 修復焦點：單一任務負責人下拉選單 --- */}
+                                                    <div className="md:col-span-2 relative flex items-center bg-slate-50 border border-transparent hover:border-slate-200 transition-colors rounded-xl px-2">
+                                                        <i data-lucide="user" className="w-3 h-3 text-slate-400 mr-1 flex-shrink-0"></i>
                                                         <select 
-                                                            value={child.assignee || ''} 
+                                                            value={getCurrentAssignee(members, child.assignee)} 
                                                             disabled={!canEditChild} 
                                                             onChange={(e) => onUpdate(child.id, { assignee: e.target.value })} 
-                                                            className="editable-field w-full bg-slate-50 pl-8 pr-2 py-2 rounded-xl text-xs font-bold text-slate-600 border border-transparent outline-none cursor-pointer appearance-none"
+                                                            className="w-full bg-transparent py-2 text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none"
                                                         >
                                                             <option value="">未指派</option>
                                                             {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                                                         </select>
+                                                        <i data-lucide="chevron-down" className="w-3 h-3 text-slate-400 flex-shrink-0 pointer-events-none"></i>
                                                     </div>
+                                                    
                                                     <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className={`editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold border border-transparent outline-none ${isChildDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
                                                     <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent"><input type="range" min="0" max="100" step="10" defaultValue={child.status} disabled={!canEditChild} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className={`text-xs font-black w-8 text-right font-mono ${isChildDelayed ? 'text-impr-danger' : 'text-impr-orange'}`}>{child.status}%</span></div>
                                                     <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3 h-3 text-slate-300"></i><input type="text" defaultValue={child.note} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { note: e.target.value })} className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2 rounded-xl text-xs text-slate-600 border border-transparent outline-none" placeholder="備註..." /></div>
@@ -634,29 +652,83 @@
             );
         };
 
+        // --- 核心：獨立出的 DetailModal (解決焦點流失與閃退 Bug) ---
+        const DetailModal = ({ actId, tasks, user, members, onCreateTask, onUpdateTask, onClose }) => {
+            const data = useMemo(() => {
+                const actTasks = tasks.filter(t => t.activityId === actId);
+                const subTasks = actTasks.filter(c => c.isApplicable && String(c.code).includes('.'));
+                let prog = 0;
+                if (subTasks.length > 0) {
+                    const sum = subTasks.reduce((s, t) => s + (Number(t.status) || 0), 0);
+                    prog = Math.round(sum / subTasks.length);
+                }
+                return { progress: prog, allTasks: actTasks };
+            }, [actId, tasks]);
+
+            const surveyTasks = data.allTasks.filter(t => t.type === 'SURVEY');
+            const itemTasks = data.allTasks.filter(t => t.type === 'ITEM');
+
+            const [isAdding, setIsAdding] = useState(false);
+            const [newTask, setNewTask] = useState({ type: 'SURVEY', code: '', name: '' });
+
+            const submitTask = () => {
+                if(!newTask.code || !newTask.name) return alert('請輸入代碼與名稱');
+                onCreateTask(actId, newTask);
+                setIsAdding(false);
+                setNewTask({ type: 'SURVEY', code: '', name: '' });
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-md">
+                    <div className="bg-white w-full h-full sm:h-[90vh] sm:max-w-5xl sm:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-10">
+                        <div className="px-4 py-3 sm:px-8 py-5 border-b flex justify-between items-center bg-white z-10 shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-slate-100 rounded-xl hidden sm:block"><i data-lucide="layers" className="text-impr-orange w-5 h-5"></i></div>
+                                <div><h3 className="text-lg sm:text-xl font-black text-slate-800 italic tracking-tight">任務明細</h3><p className="text-xs text-slate-400 font-bold">總進度：<span className="text-impr-orange font-black text-sm">{data.progress}%</span></p></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setIsAdding(!isAdding)} className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-700 flex items-center gap-1 transition-colors"><i data-lucide="plus" className="w-3 h-3"></i> 新增任務</button>
+                                <button onClick={onClose} className="w-9 h-9 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors"><i data-lucide="x" className="w-5 h-5"></i></button>
+                            </div>
+                        </div>
+                        {isAdding && (
+                            <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end animate-in slide-in-from-top-2">
+                                <div className="sm:col-span-3"><label className="text-[10px] font-bold text-slate-400 mb-1 block">類型</label><select className="w-full p-2 text-xs rounded-lg border font-bold outline-none" value={newTask.type} onChange={e => setNewTask({...newTask, type: e.target.value})}><option value="SURVEY">場勘查核 (Survey)</option><option value="ITEM">專案籌備 (Item)</option></select></div>
+                                <div className="sm:col-span-2"><label className="text-[10px] font-bold text-slate-400 mb-1 block">代碼</label><input type="text" className="w-full p-2 text-xs rounded-lg border font-bold outline-none" placeholder="如 3.1" value={newTask.code} onChange={e => setNewTask({...newTask, code: e.target.value})} /></div>
+                                <div className="sm:col-span-5"><label className="text-[10px] font-bold text-slate-400 mb-1 block">任務名稱</label><input type="text" className="w-full p-2 text-xs rounded-lg border font-bold outline-none" placeholder="輸入任務名稱..." value={newTask.name} onChange={e => setNewTask({...newTask, name: e.target.value})} /></div>
+                                <div className="sm:col-span-2 flex gap-2"><button onClick={submitTask} className="flex-1 py-2 bg-impr-orange text-white text-xs font-bold rounded-lg hover:bg-orange-600">確認</button><button onClick={() => setIsAdding(false)} className="px-3 py-2 bg-white border text-xs font-bold rounded-lg text-slate-500 hover:bg-slate-50">取消</button></div>
+                            </div>
+                        )}
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50/50 no-scrollbar space-y-8 pb-20">
+                            <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-impr-orange">場勘查核 (Survey)</h4><TaskHierarchy tasks={surveyTasks} user={user} members={members} onUpdate={onUpdateTask} /></div>
+                            <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-blue-500">專案籌備 (Item)</h4><TaskHierarchy tasks={itemTasks} user={user} members={members} onUpdate={onUpdateTask} /></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const App = () => {
             const [user, setUser] = useState(null);
             
             const [members, setMembers] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_team_v8.0');
+                    const cached = localStorage.getItem('impr_team_v8.2');
                     const parsed = cached ? JSON.parse(cached) : [];
                     return parsed.length > 0 ? parsed : [];
-                } catch {
-                    return [];
-                }
+                } catch { return []; }
             });
 
             const [activities, setActivities] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_activities_v8.0');
+                    const cached = localStorage.getItem('impr_activities_v8.2');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
 
             const [tasks, setTasks] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_tasks_v8.0');
+                    const cached = localStorage.getItem('impr_tasks_v8.2');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
@@ -665,7 +737,7 @@
             const [selAct, setSelAct] = useState(null);
             const [isCreateOpen, setIsCreateOpen] = useState(false);
             const [error, setError] = useState('');
-            const [form, setForm] = useState({ name: '', clientName: '', startDate: '', endDate: '', location: '' });
+            const [form, setForm] = useState({ name: '', clientName: '', startDate: '', endDate: '', location: '', manager: '' });
             const [activePage, setActivePage] = useState('dashboard'); 
             const [viewTab, setViewTab] = useState('active'); 
             const [sidebarOpen, setSidebarOpen] = useState(false); 
@@ -675,11 +747,11 @@
 
             useEffect(() => {
                 if (activities && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v8.0', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v8.0', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v8.2', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v8.2', JSON.stringify(tasks));
                 }
                 if (members && members.length > 0) {
-                    localStorage.setItem('impr_team_v8.0', JSON.stringify(members));
+                    localStorage.setItem('impr_team_v8.2', JSON.stringify(members));
                 }
             }, [activities, tasks, members]);
 
@@ -687,13 +759,12 @@
                 setLoading(true);
                 
                 if (GAS_API_URL) {
-                    // 🚀 正式連線取得資料
                     const res = await callGAS({ action: 'getData', role: currUser?.role, name: currUser?.name });
                     if (res.status === 'success') {
-                        if (res.members !== undefined) {
+                        if (res.members !== undefined && res.members.length > 0) {
                             setMembers(res.members);
                         } else {
-                            console.warn("API 沒有回傳 members 屬性，請確認已重新發布 Google Apps Script！");
+                            console.warn("未從 API 取得 Members。");
                         }
                         setActivities(res.activities || []);
                         setTasks(res.tasks || []);
@@ -702,15 +773,14 @@
                     }
                     setLoading(false);
                 } else {
-                    // 💻 本地端模擬模式
                     if (activities.length === 0 || tasks.length === 0) {
                         setTimeout(() => {
                             if (members.length === 0) setMembers(DEFAULT_MEMBERS);
                             const defaultActs = [
-                                { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01' },
-                                { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-20' },
-                                { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-12' },
-                                { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '', status: '進行中', startDate: '2026-02-18', endDate: '2026-03-13' }
+                                { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01', assignee: 'Joseph' },
+                                { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-20', assignee: 'Joseph' },
+                                { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-12', assignee: 'Joseph' },
+                                { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '', status: '進行中', startDate: '2026-02-18', endDate: '2026-03-13', assignee: 'Joseph' }
                             ];
                             setActivities(defaultActs);
                             
@@ -733,7 +803,6 @@
                 setLoading(true);
                 
                 if (GAS_API_URL) {
-                    // 🚀 透過 API 驗證登入
                     const res = await callGAS({ action: 'login', username: u, password: p });
                     if (res.status === 'success') {
                         setUser(res.user);
@@ -754,36 +823,42 @@
                             setUser({ name: foundUser.name, role: foundUser.role });
                             fetchData({ name: foundUser.name, role: foundUser.role });
                         } else {
-                            setError('帳號或密碼錯誤 (未設定 API 時，預設密碼為 123)');
+                            setError('帳號或密碼錯誤');
                             setLoading(false);
                         }
                     }, 500);
                 }
             };
 
-            const handleUpdate = async (tId, updates) => {
+            const handleUpdateTask = async (tId, updates) => {
                 setTasks(prev => prev.map(t => t.id === tId ? { ...t, ...updates } : t));
                 await callGAS({ action: 'updateTask', taskId: tId, ...updates });
+            };
+
+            const handleUpdateActivity = async (actId, updates) => {
+                setActivities(prev => prev.map(a => a.id === actId ? { ...a, ...updates } : a));
+                await callGAS({ action: 'updateActivity', activityId: actId, ...updates });
             };
 
             const handleCreate = async () => {
                 if(!form.name) return;
                 setLoading(true);
                 
+                const assigneeName = form.manager || user.name;
                 const newActId = 'ACT-' + Date.now();
-                const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', location: form.location, status: '籌備中', startDate: form.startDate, endDate: form.endDate };
+                const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', location: form.location, status: '籌備中', startDate: form.startDate, endDate: form.endDate, assignee: assigneeName };
                 
                 let newTasks = [];
-                SURVEY_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_s_${i}`, activityId: newActId, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: user.name, dueDate: form.endDate, note: '' }));
-                ITEM_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_i_${i}`, activityId: newActId, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: user.name, dueDate: form.endDate, note: '' }));
+                SURVEY_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_s_${i}`, activityId: newActId, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: assigneeName, dueDate: form.endDate, note: '' }));
+                ITEM_TEMPLATE.forEach((t, i) => newTasks.push({ id: `${newActId}_i_${i}`, activityId: newActId, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: assigneeName, dueDate: form.endDate, note: '' }));
 
-                await callGAS({ action: 'createActivity', ...form, manager: user.name });
+                await callGAS({ action: 'createActivity', ...form, manager: assigneeName });
 
                 setTimeout(() => { 
                     setActivities(prev => [newAct, ...prev]);
                     setTasks(prev => [...prev, ...newTasks]);
                     setIsCreateOpen(false); 
-                    setForm({name:'',clientName:'',startDate:'',endDate:'', location:''}); 
+                    setForm({name:'',clientName:'',startDate:'',endDate:'', location:'', manager: ''}); 
                     setLoading(false);
                 }, 800);
             };
@@ -793,10 +868,6 @@
                 const newTask = { id: newId, activityId: actId, code: taskData.code, name: taskData.name, type: taskData.type, status: 0, isApplicable: true, assignee: user.name, note: '', dueDate: '' };
                 setTasks(prev => [...prev, newTask]);
                 await callGAS({ action: 'createTask', ...newTask });
-            };
-
-            const handleStatusChange = (actId, newStatus) => {
-                setActivities(prev => prev.map(a => a.id === actId ? { ...a, status: newStatus } : a));
             };
 
             const handleDelete = async (actId) => {
@@ -827,61 +898,6 @@
                     return Math.round(sum / subTasks.length);
                 }
                 return 0;
-            };
-
-            const DetailModal = ({ actId, onCreateTask, members }) => {
-                const data = useMemo(() => {
-                    const actTasks = tasks.filter(t => t.activityId === actId);
-                    const subTasks = actTasks.filter(c => c.isApplicable && String(c.code).includes('.'));
-                    let prog = 0;
-                    if (subTasks.length > 0) {
-                        const sum = subTasks.reduce((s, t) => s + (Number(t.status) || 0), 0);
-                        prog = Math.round(sum / subTasks.length);
-                    }
-                    return { progress: prog, allTasks: actTasks };
-                }, [actId, tasks]);
-
-                const surveyTasks = data.allTasks.filter(t => t.type === 'SURVEY');
-                const itemTasks = data.allTasks.filter(t => t.type === 'ITEM');
-
-                const [isAdding, setIsAdding] = useState(false);
-                const [newTask, setNewTask] = useState({ type: 'SURVEY', code: '', name: '' });
-
-                const submitTask = () => {
-                    if(!newTask.code || !newTask.name) return alert('請輸入代碼與名稱');
-                    onCreateTask(actId, newTask);
-                    setIsAdding(false);
-                    setNewTask({ type: 'SURVEY', code: '', name: '' });
-                };
-
-                return (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-md">
-                        <div className="bg-white w-full h-full sm:h-[90vh] sm:max-w-5xl sm:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-10">
-                            <div className="px-4 py-3 sm:px-8 py-5 border-b flex justify-between items-center bg-white z-10 shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-slate-100 rounded-xl hidden sm:block"><i data-lucide="layers" className="text-impr-orange w-5 h-5"></i></div>
-                                    <div><h3 className="text-lg sm:text-xl font-black text-slate-800 italic tracking-tight">任務明細</h3><p className="text-xs text-slate-400 font-bold">總進度：<span className="text-impr-orange font-black text-sm">{data.progress}%</span></p></div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => setIsAdding(!isAdding)} className="px-3 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-700 flex items-center gap-1 transition-colors"><i data-lucide="plus" className="w-3 h-3"></i> 新增任務</button>
-                                    <button onClick={()=>setSelAct(null)} className="w-9 h-9 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors"><i data-lucide="x" className="w-5 h-5"></i></button>
-                                </div>
-                            </div>
-                            {isAdding && (
-                                <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end animate-in slide-in-from-top-2">
-                                    <div className="sm:col-span-3"><label className="text-[10px] font-bold text-slate-400 mb-1 block">類型</label><select className="w-full p-2 text-xs rounded-lg border font-bold outline-none" value={newTask.type} onChange={e => setNewTask({...newTask, type: e.target.value})}><option value="SURVEY">場勘查核 (Survey)</option><option value="ITEM">專案籌備 (Item)</option></select></div>
-                                    <div className="sm:col-span-2"><label className="text-[10px] font-bold text-slate-400 mb-1 block">代碼</label><input type="text" className="w-full p-2 text-xs rounded-lg border font-bold outline-none" placeholder="如 3.1" value={newTask.code} onChange={e => setNewTask({...newTask, code: e.target.value})} /></div>
-                                    <div className="sm:col-span-5"><label className="text-[10px] font-bold text-slate-400 mb-1 block">任務名稱</label><input type="text" className="w-full p-2 text-xs rounded-lg border font-bold outline-none" placeholder="輸入任務名稱..." value={newTask.name} onChange={e => setNewTask({...newTask, name: e.target.value})} /></div>
-                                    <div className="sm:col-span-2 flex gap-2"><button onClick={submitTask} className="flex-1 py-2 bg-impr-orange text-white text-xs font-bold rounded-lg hover:bg-orange-600">確認</button><button onClick={() => setIsAdding(false)} className="px-3 py-2 bg-white border text-xs font-bold rounded-lg text-slate-500 hover:bg-slate-50">取消</button></div>
-                                </div>
-                            )}
-                            <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50/50 no-scrollbar space-y-8 pb-20">
-                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-impr-orange">場勘查核 (Survey)</h4><TaskHierarchy tasks={surveyTasks} user={user} members={members} onUpdate={handleUpdate} /></div>
-                                <div><h4 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4 pl-2 border-l-4 border-blue-500">專案籌備 (Item)</h4><TaskHierarchy tasks={itemTasks} user={user} members={members} onUpdate={handleUpdate} /></div>
-                            </div>
-                        </div>
-                    </div>
-                );
             };
 
             const filteredActivities = useMemo(() => {
@@ -934,8 +950,24 @@
                                             <div key={act.id} className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm p-5 sm:p-8 flex flex-col md:flex-row gap-6 hover:border-impr-orange/30 transition-all relative">
                                                 {delayedCount > 0 && <div className="absolute top-4 right-4 bg-red-50 text-red-600 px-3 py-1 rounded-full text-xs font-bold border border-red-100 flex items-center gap-1 shadow-sm"><i data-lucide="alert-triangle" className="w-3.5 h-3.5"></i> {delayedCount} 項延遲</div>}
                                                 <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <select value={act.status} onChange={(e) => handleStatusChange(act.id, e.target.value)} className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`}><option value="籌備中">籌備中</option><option value="進行中">進行中</option><option value="已完工">已完工</option><option value="結案">結案</option></select>
+                                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                        <select value={act.status} onChange={(e) => handleUpdateActivity(act.id, { status: e.target.value })} className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`} disabled={user?.role !== 'admin'}><option value="籌備中">籌備中</option><option value="進行中">進行中</option><option value="已完工">已完工</option><option value="結案">結案</option></select>
+                                                        
+                                                        {/* --- 修改：增加明顯的 Chevron-down，解決無法選擇的錯覺 --- */}
+                                                        <div className="flex items-center gap-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg transition-colors cursor-pointer relative">
+                                                            <i data-lucide="user" className="w-3 h-3 text-slate-400 flex-shrink-0"></i>
+                                                            <select 
+                                                                value={getCurrentAssignee(members, act.assignee)} 
+                                                                onChange={(e) => handleUpdateActivity(act.id, { assignee: e.target.value })}
+                                                                className="bg-transparent text-[10px] font-bold text-slate-600 outline-none cursor-pointer appearance-none pr-4 w-full"
+                                                                disabled={user?.role !== 'admin'}
+                                                            >
+                                                                <option value="">未指派負責人</option>
+                                                                {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                                                            </select>
+                                                            <i data-lucide="chevron-down" className="w-2.5 h-2.5 text-slate-400 absolute right-2 pointer-events-none"></i>
+                                                        </div>
+
                                                     </div>
                                                     <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-2 tracking-tight">{act.name}</h2>
                                                     <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-400"><span className="flex items-center gap-1"><i data-lucide="briefcase" className="w-3 h-3"></i> {act.clientName}</span><span className="flex items-center gap-1"><i data-lucide="map-pin" className="w-3 h-3"></i> {act.location || '未填寫'}</span></div>
@@ -957,8 +989,21 @@
                             <div className="bg-white w-full max-w-md p-6 sm:p-8 rounded-3xl shadow-2xl animate-in zoom-in-95">
                                 <h3 className="font-bold text-lg mb-4">新增專案</h3>
                                 <div className="space-y-3">
-                                    <input type="text" placeholder="客戶名稱" className="w-full p-3 border rounded-xl font-bold text-sm" onChange={e=>setForm({...form, clientName: e.target.value})}/>
                                     <input type="text" placeholder="專案名稱" className="w-full p-3 border rounded-xl font-bold text-sm" onChange={e=>setForm({...form, name: e.target.value})}/>
+                                    <input type="text" placeholder="客戶名稱" className="w-full p-3 border rounded-xl font-bold text-sm" onChange={e=>setForm({...form, clientName: e.target.value})}/>
+                                    
+                                    <div className="relative">
+                                        <select 
+                                            className="w-full p-3 border rounded-xl font-bold text-sm text-slate-600 outline-none cursor-pointer appearance-none"
+                                            onChange={e => setForm({...form, manager: e.target.value})}
+                                            value={form.manager || user?.name || ''}
+                                        >
+                                            <option value="">請選擇專案負責人</option>
+                                            {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                                        </select>
+                                        <i data-lucide="chevron-down" className="w-4 h-4 text-slate-400 absolute right-4 top-4 pointer-events-none"></i>
+                                    </div>
+                                    
                                     <input type="text" placeholder="活動地點" className="w-full p-3 border rounded-xl font-bold text-sm" onChange={e=>setForm({...form, location: e.target.value})}/>
                                     <div className="flex gap-3"><input type="date" className="w-1/2 p-3 border rounded-xl text-sm" onChange={e=>setForm({...form, startDate: e.target.value})}/><input type="date" className="w-1/2 p-3 border rounded-xl text-sm" onChange={e=>setForm({...form, endDate: e.target.value})}/></div>
                                 </div>
@@ -966,7 +1011,19 @@
                             </div>
                         </div>
                     )}
-                    {selAct && <DetailModal actId={selAct} onCreateTask={handleCreateTask} members={members} />}
+                    
+                    {/* --- 修復焦點：DetailModal 已被移出 App 元件外，防止 React 渲染時閃退 --- */}
+                    {selAct && (
+                        <DetailModal 
+                            actId={selAct} 
+                            tasks={tasks}
+                            user={user}
+                            members={members}
+                            onCreateTask={handleCreateTask} 
+                            onUpdateTask={handleUpdateTask}
+                            onClose={() => setSelAct(null)}
+                        />
+                    )}
                 </div>
             );
         };
