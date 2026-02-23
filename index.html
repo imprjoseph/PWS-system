@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v8.2</title>
+    <title>IMPR 專案管考系統 - 企業版 v8.3</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -106,7 +106,8 @@
         
         // --- 1. 預設名單 ---
         const DEFAULT_MEMBERS = [
-            { id: 1, username: 'joseph', password: '123', role: 'admin', name: 'joseph' }
+            { id: 1, username: 'joseph', password: '123', role: 'admin', name: 'joseph' },
+            { id: 2, username: 'Arlena', password: '123', role: 'staff', name: 'arlena' }
         ];
 
         // --- 2. 範本設定 (精確對照 SURVEY_TEMPLATE.csv) ---
@@ -213,14 +214,16 @@
             </svg>
         );
 
-        // --- 輔助函式：取得正確大小寫的負責人名稱 ---
+        // --- 輔助函式：取得正確大小寫的負責人名稱 (嚴格對應 option value) ---
         const getCurrentAssignee = (members, assigneeStr) => {
             if (!assigneeStr) return "";
+            const assigneeLower = String(assigneeStr).trim().toLowerCase();
             const found = members.find(m => 
-                (m.name || '').toLowerCase() === assigneeStr.toLowerCase() || 
-                (m.username || '').toLowerCase() === assigneeStr.toLowerCase()
+                (m.name && String(m.name).trim().toLowerCase() === assigneeLower) || 
+                (m.username && String(m.username).trim().toLowerCase() === assigneeLower)
             );
-            return found ? found.name : assigneeStr;
+            // 必須回傳與 <option value> 完全一模一樣的字串 (通常為 found.name 或 found.username)
+            return found ? (found.name || found.username) : assigneeStr;
         };
 
         // --- API 呼叫模組 ---
@@ -256,8 +259,8 @@
                         </div>
                         <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-8 tracking-tight italic">專案進度管考系統</h2>
                         <div className="space-y-3">
-                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Username (如: Joseph)" />
-                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Password" />
+                            <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Username (如: joseph)" />
+                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Password (預設: 123)" />
                         </div>
                         {error && <div className="text-red-500 text-xs font-bold mt-4 bg-red-50 p-2 rounded">{error}</div>}
                         <button onClick={() => onLogin(u, p)} disabled={loading} className="w-full mt-8 py-3.5 sm:py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 transition-all shadow-lg active:scale-95">{loading ? "連線驗證中..." : "登入系統"}</button>
@@ -564,6 +567,8 @@
 
             const checkPermission = (assigneeName) => {
                 if (user?.role === 'admin') return true;
+                // --- 關鍵修正：若未指派，允許任何人認領 ---
+                if (!assigneeName || String(assigneeName).trim() === '') return true; 
                 return user?.name?.toLowerCase() === (assigneeName || '').toLowerCase() || user?.username?.toLowerCase() === (assigneeName || '').toLowerCase();
             };
 
@@ -583,31 +588,38 @@
                                         <span className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-slate-800 text-white text-[10px] sm:text-xs font-mono font-bold rounded-lg shadow-sm">{parent.code}</span>
                                         <span className="font-black text-slate-700 text-sm tracking-tight truncate">{parent.name}</span>
                                         {isParentDelayed && <span className="text-[10px] font-bold text-white bg-impr-danger px-2 py-0.5 rounded-full flex items-center gap-1"><i data-lucide="alert-circle" className="w-3 h-3"></i> 延遲</span>}
-                                        {!canEditParent && <span className="text-[10px] text-slate-400 border border-slate-200 px-1.5 rounded ml-2">唯讀</span>}
+                                        {!canEditParent && <span className="text-[10px] text-slate-400 border border-slate-200 px-1.5 rounded ml-2" title="您無權限修改此項目">唯讀</span>}
                                     </div>
                                     <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0"><div className="flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 bg-white rounded-lg border border-slate-200"><div className="w-10 sm:w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-impr-orange" style={{width: `${progress}%`}}></div></div><span className="text-xs font-black text-impr-orange">{progress}%</span></div><i data-lucide="chevron-down" className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-open:rotate-180 transition-transform"></i></div>
                                 </summary>
                                 <div className="p-3 sm:p-4 space-y-3 bg-white">
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                                            {/* --- 修復焦點：負責人下拉選單 --- */}
+                                            {/* --- 修復焦點：負責人下拉選單 (加入 stopPropagation 防止折疊面板干擾) --- */}
                                             <div className="md:col-span-2 relative flex items-center bg-white border border-slate-200 rounded-xl px-2">
                                                 <i data-lucide="user" className="w-3.5 h-3.5 text-slate-400 mr-1 flex-shrink-0"></i>
                                                 <select 
                                                     value={getCurrentAssignee(members, parent.assignee)} 
                                                     disabled={!canEditParent} 
-                                                    onChange={(e) => onUpdate(parent.id, { assignee: e.target.value })} 
-                                                    className="w-full bg-transparent py-2.5 text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onChange={(e) => {
+                                                        e.stopPropagation();
+                                                        onUpdate(parent.id, { assignee: e.target.value });
+                                                    }} 
+                                                    className="w-full bg-transparent py-2.5 text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none disabled:cursor-not-allowed"
                                                 >
                                                     <option value="">未指派</option>
-                                                    {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                                                    {members.map(m => {
+                                                        const dName = m.name || m.username;
+                                                        return <option key={m.id} value={dName}>{dName}</option>;
+                                                    })}
                                                 </select>
                                                 <i data-lucide="chevron-down" className="w-3 h-3 text-slate-400 flex-shrink-0 pointer-events-none"></i>
                                             </div>
                                             
-                                            <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className={`editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold border border-slate-200 outline-none ${isParentDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
-                                            <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200"><input type="range" min="0" max="100" step="10" defaultValue={parent.status} disabled={children.length > 0 || !canEditParent} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span></div>
-                                            <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.note} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { note: e.target.value })} className="editable-field w-full bg-white pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-slate-200 outline-none" placeholder="備註..." /></div>
+                                            <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} disabled={!canEditParent} onClick={(e) => e.stopPropagation()} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className={`editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold border border-slate-200 outline-none ${isParentDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
+                                            <div className="md:col-span-3 flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200"><input type="range" min="0" max="100" step="10" defaultValue={parent.status} disabled={children.length > 0 || !canEditParent} onClick={(e) => e.stopPropagation()} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(parent.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className="text-xs font-black text-impr-orange w-8 text-right font-mono">{parent.status}%</span></div>
+                                            <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i><input type="text" defaultValue={parent.note} disabled={!canEditParent} onClick={(e) => e.stopPropagation()} onBlur={(e) => onUpdate(parent.id, { note: e.target.value })} className="editable-field w-full bg-white pl-9 pr-3 py-2.5 rounded-xl text-xs text-slate-600 border border-slate-200 outline-none" placeholder="備註..." /></div>
                                         </div>
                                     </div>
                                     {children.map(child => {
@@ -617,7 +629,7 @@
                                         <div key={child.id} className={`p-4 rounded-xl border transition-all ${child.isApplicable ? `bg-white hover:border-slate-300 shadow-sm ${isChildDelayed ? 'border-impr-danger/30 bg-red-50/10' : 'border-slate-100'}` : 'bg-slate-50 border-transparent opacity-50'}`}>
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                                                 <div className="flex items-center gap-3"><span className="text-slate-400 font-mono text-xs font-bold w-8 text-right">{child.code}</span><span className={`font-bold text-sm ${child.isApplicable ? 'text-slate-700' : 'line-through text-slate-400'}`}>{child.name}</span>{isChildDelayed && <span className="text-[9px] text-white bg-impr-danger px-1.5 py-0.5 rounded ml-2 flex items-center gap-0.5"><i data-lucide="alert-circle" className="w-2.5 h-2.5"></i> 延遲</span>}</div>
-                                                <button disabled={!canEditChild} onClick={() => onUpdate(child.id, { isApplicable: !child.isApplicable })} className={`self-start sm:self-auto px-2 py-1 rounded text-[10px] font-bold border transition-colors ${child.isApplicable ? 'text-slate-400 border-slate-200' : 'bg-slate-600 text-white border-slate-600'} ${!canEditChild ? 'opacity-50 cursor-not-allowed' : ''}`}>{child.isApplicable ? "設為不適用" : "恢復適用"}</button>
+                                                <button disabled={!canEditChild} onClick={(e) => { e.stopPropagation(); onUpdate(child.id, { isApplicable: !child.isApplicable }); }} className={`self-start sm:self-auto px-2 py-1 rounded text-[10px] font-bold border transition-colors ${child.isApplicable ? 'text-slate-400 border-slate-200' : 'bg-slate-600 text-white border-slate-600'} ${!canEditChild ? 'opacity-50 cursor-not-allowed' : ''}`}>{child.isApplicable ? "設為不適用" : "恢復適用"}</button>
                                             </div>
                                             {child.isApplicable && (
                                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pl-0 sm:pl-11">
@@ -628,18 +640,25 @@
                                                         <select 
                                                             value={getCurrentAssignee(members, child.assignee)} 
                                                             disabled={!canEditChild} 
-                                                            onChange={(e) => onUpdate(child.id, { assignee: e.target.value })} 
-                                                            className="w-full bg-transparent py-2 text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onChange={(e) => {
+                                                                e.stopPropagation();
+                                                                onUpdate(child.id, { assignee: e.target.value });
+                                                            }} 
+                                                            className="w-full bg-transparent py-2 text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none disabled:cursor-not-allowed"
                                                         >
                                                             <option value="">未指派</option>
-                                                            {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                                                            {members.map(m => {
+                                                                const dName = m.name || m.username;
+                                                                return <option key={m.id} value={dName}>{dName}</option>;
+                                                            })}
                                                         </select>
                                                         <i data-lucide="chevron-down" className="w-3 h-3 text-slate-400 flex-shrink-0 pointer-events-none"></i>
                                                     </div>
                                                     
-                                                    <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className={`editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold border border-transparent outline-none ${isChildDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
-                                                    <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent"><input type="range" min="0" max="100" step="10" defaultValue={child.status} disabled={!canEditChild} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className={`text-xs font-black w-8 text-right font-mono ${isChildDelayed ? 'text-impr-danger' : 'text-impr-orange'}`}>{child.status}%</span></div>
-                                                    <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3 h-3 text-slate-300"></i><input type="text" defaultValue={child.note} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { note: e.target.value })} className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2 rounded-xl text-xs text-slate-600 border border-transparent outline-none" placeholder="備註..." /></div>
+                                                    <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} disabled={!canEditChild} onClick={(e) => e.stopPropagation()} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className={`editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold border border-transparent outline-none ${isChildDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
+                                                    <div className="md:col-span-3 flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-xl border border-transparent"><input type="range" min="0" max="100" step="10" defaultValue={child.status} disabled={!canEditChild} onClick={(e) => e.stopPropagation()} onChange={(e) => { e.target.nextElementSibling.innerText = e.target.value + '%'; }} onMouseUp={(e) => onUpdate(child.id, { status: Number(e.target.value) })} onTouchEnd={(e) => onUpdate(child.id, { status: Number(e.target.value) })} className="flex-1 h-1.5 bg-slate-200 rounded-lg cursor-pointer accent-impr-orange" /><span className={`text-xs font-black w-8 text-right font-mono ${isChildDelayed ? 'text-impr-danger' : 'text-impr-orange'}`}>{child.status}%</span></div>
+                                                    <div className="md:col-span-5 relative"><i data-lucide="message-square" className="absolute left-3 top-3 w-3 h-3 text-slate-300"></i><input type="text" defaultValue={child.note} disabled={!canEditChild} onClick={(e) => e.stopPropagation()} onBlur={(e) => onUpdate(child.id, { note: e.target.value })} className="editable-field w-full bg-slate-50 pl-9 pr-3 py-2 rounded-xl text-xs text-slate-600 border border-transparent outline-none" placeholder="備註..." /></div>
                                                 </div>
                                             )}
                                         </div>
@@ -652,7 +671,7 @@
             );
         };
 
-        // --- 核心：獨立出的 DetailModal (解決焦點流失與閃退 Bug) ---
+        // --- 核心：獨立出的 DetailModal ---
         const DetailModal = ({ actId, tasks, user, members, onCreateTask, onUpdateTask, onClose }) => {
             const data = useMemo(() => {
                 const actTasks = tasks.filter(t => t.activityId === actId);
@@ -713,7 +732,7 @@
             
             const [members, setMembers] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_team_v8.2');
+                    const cached = localStorage.getItem('impr_team_v8.3');
                     const parsed = cached ? JSON.parse(cached) : [];
                     return parsed.length > 0 ? parsed : [];
                 } catch { return []; }
@@ -721,14 +740,14 @@
 
             const [activities, setActivities] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_activities_v8.2');
+                    const cached = localStorage.getItem('impr_activities_v8.3');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
 
             const [tasks, setTasks] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_tasks_v8.2');
+                    const cached = localStorage.getItem('impr_tasks_v8.3');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
@@ -747,11 +766,11 @@
 
             useEffect(() => {
                 if (activities && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v8.2', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v8.2', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v8.3', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v8.3', JSON.stringify(tasks));
                 }
                 if (members && members.length > 0) {
-                    localStorage.setItem('impr_team_v8.2', JSON.stringify(members));
+                    localStorage.setItem('impr_team_v8.3', JSON.stringify(members));
                 }
             }, [activities, tasks, members]);
 
@@ -953,17 +972,24 @@
                                                     <div className="flex flex-wrap items-center gap-2 mb-2">
                                                         <select value={act.status} onChange={(e) => handleUpdateActivity(act.id, { status: e.target.value })} className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`} disabled={user?.role !== 'admin'}><option value="籌備中">籌備中</option><option value="進行中">進行中</option><option value="已完工">已完工</option><option value="結案">結案</option></select>
                                                         
-                                                        {/* --- 修改：增加明顯的 Chevron-down，解決無法選擇的錯覺 --- */}
+                                                        {/* --- 修復焦點：首頁專案負責人下拉選單 --- */}
                                                         <div className="flex items-center gap-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg transition-colors cursor-pointer relative">
                                                             <i data-lucide="user" className="w-3 h-3 text-slate-400 flex-shrink-0"></i>
                                                             <select 
+                                                                onClick={(e) => e.stopPropagation()}
                                                                 value={getCurrentAssignee(members, act.assignee)} 
-                                                                onChange={(e) => handleUpdateActivity(act.id, { assignee: e.target.value })}
-                                                                className="bg-transparent text-[10px] font-bold text-slate-600 outline-none cursor-pointer appearance-none pr-4 w-full"
+                                                                onChange={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleUpdateActivity(act.id, { assignee: e.target.value });
+                                                                }}
+                                                                className="bg-transparent text-[10px] font-bold text-slate-600 outline-none cursor-pointer appearance-none pr-4 w-full disabled:cursor-not-allowed"
                                                                 disabled={user?.role !== 'admin'}
                                                             >
                                                                 <option value="">未指派負責人</option>
-                                                                {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                                                                {members.map(m => {
+                                                                    const dName = m.name || m.username;
+                                                                    return <option key={m.id} value={dName}>{dName}</option>;
+                                                                })}
                                                             </select>
                                                             <i data-lucide="chevron-down" className="w-2.5 h-2.5 text-slate-400 absolute right-2 pointer-events-none"></i>
                                                         </div>
@@ -999,7 +1025,10 @@
                                             value={form.manager || user?.name || ''}
                                         >
                                             <option value="">請選擇專案負責人</option>
-                                            {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                                            {members.map(m => {
+                                                const dName = m.name || m.username;
+                                                return <option key={m.id} value={dName}>{dName}</option>;
+                                            })}
                                         </select>
                                         <i data-lucide="chevron-down" className="w-4 h-4 text-slate-400 absolute right-4 top-4 pointer-events-none"></i>
                                     </div>
@@ -1012,7 +1041,6 @@
                         </div>
                     )}
                     
-                    {/* --- 修復焦點：DetailModal 已被移出 App 元件外，防止 React 渲染時閃退 --- */}
                     {selAct && (
                         <DetailModal 
                             actId={selAct} 
