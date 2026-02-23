@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v14.0</title>
+    <title>IMPR 專案管考系統 - 企業版 v15.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -99,7 +99,7 @@
         const logoUrl = "logo.png";
         
         // ---------------------------------------------------------
-        // 🚀 Google Sheet 真實 API 網址 (您的最新部署)
+        // 🚀 Google Sheet 真實 API 網址
         // ---------------------------------------------------------
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyFmdjbQ1WI3Ng_xmZrgp4h5eno8kMvZWD2oNFYiTK3q_1o9HSyjZx_d9NQqdiADB8V/exec"; 
         
@@ -137,7 +137,7 @@
             </svg>
         );
 
-        // --- 強力輔助函式：取得正確的負責人 Name ---
+        // --- 強力輔助函式：絕對綁定使用 name 作為選項與顯示值 ---
         const getAssigneeValue = (members, assigneeStr) => {
             if (!assigneeStr) return "";
             const match = String(assigneeStr).trim().toLowerCase();
@@ -448,7 +448,7 @@
             );
         };
 
-        // --- 核心：與團隊名單連動的任務元件 (支援連動變更) ---
+        // --- 核心：與團隊名單連動的任務元件 (完美母子連動) ---
         const TaskHierarchy = ({ tasks, user, members, onUpdate }) => {
             const { parents, childrenMap } = useMemo(() => {
                 const parents = [];
@@ -517,7 +517,7 @@
                                     <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/20 mb-3">
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                                             
-                                            {/* 母任務指派 (連動更新所有子任務) */}
+                                            {/* 母任務指派 (改變時連動更新所有子任務) */}
                                             <div className={`md:col-span-2 relative flex items-center bg-white border border-slate-200 rounded-xl px-2 ${!canEditParent ? 'opacity-70 bg-slate-50' : 'hover:border-impr-orange transition-colors'}`}>
                                                 <i data-lucide="user" className="w-3.5 h-3.5 text-slate-400 mr-1 flex-shrink-0"></i>
                                                 <select 
@@ -527,6 +527,7 @@
                                                     className={`w-full bg-transparent py-2.5 text-xs font-bold outline-none appearance-none ${!canEditParent ? 'text-slate-400 cursor-not-allowed' : 'text-blue-600 cursor-pointer'} relative z-10`}
                                                 >
                                                     <option value="">未指派</option>
+                                                    {/* 統一使用 m.name 作為 value，保證下拉選單不再卡死 */}
                                                     {members.map(m => (
                                                         <option key={m.id} value={m.name}>{m.name}</option>
                                                     ))}
@@ -551,7 +552,7 @@
                                             {child.isApplicable && (
                                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pl-0 sm:pl-11">
                                                     
-                                                    {/* --- 單一子任務指派 (隨時可單獨變更) --- */}
+                                                    {/* --- 單一子任務指派 (統一用 m.name) --- */}
                                                     <div className={`md:col-span-2 relative flex items-center bg-slate-50 border border-transparent hover:border-slate-200 transition-colors rounded-xl px-2 ${!canEditChild ? 'opacity-70' : ''}`}>
                                                         <i data-lucide="user" className="w-3 h-3 text-slate-400 mr-1 flex-shrink-0"></i>
                                                         <select 
@@ -654,10 +655,10 @@
         const App = () => {
             const [user, setUser] = useState(null);
             
-            // 強制清空快取金鑰 v14.0
+            // 強制清空快取金鑰 v15.0
             const [members, setMembers] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_team_v14.0');
+                    const cached = localStorage.getItem('impr_team_v15.0');
                     const parsed = cached ? JSON.parse(cached) : null;
                     return parsed && parsed.length > 0 ? parsed : [];
                 } catch { return []; }
@@ -665,14 +666,14 @@
 
             const [activities, setActivities] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_activities_v14.0');
+                    const cached = localStorage.getItem('impr_activities_v15.0');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
 
             const [tasks, setTasks] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_tasks_v14.0');
+                    const cached = localStorage.getItem('impr_tasks_v15.0');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
@@ -691,11 +692,11 @@
 
             useEffect(() => {
                 if (activities && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v14.0', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v14.0', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v15.0', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v15.0', JSON.stringify(tasks));
                 }
                 if (members && members.length > 0) {
-                    localStorage.setItem('impr_team_v14.0', JSON.stringify(members));
+                    localStorage.setItem('impr_team_v15.0', JSON.stringify(members));
                 }
             }, [activities, tasks, members]);
 
@@ -705,6 +706,7 @@
                 if (GAS_API_URL) {
                     const res = await callGAS({ action: 'getData', role: currUser?.role, name: currUser?.name });
                     if (res.status === 'success') {
+                        // 無條件以 Sheet 為準，完全消滅假資料
                         if (res.members !== undefined && res.members.length > 0) {
                             setMembers(res.members);
                         } else {
@@ -777,70 +779,62 @@
                 const targetTask = tasks.find(t => t.id === tId);
                 if (!targetTask) return;
 
-                const targetActivityId = String(targetTask.activityId);
                 const targetPCode = String(targetTask.code).trim();
-                const targetType = String(targetTask.type).trim().toUpperCase();
                 const isParent = !targetPCode.includes('.');
+                const doCascade = isParent && updates.assignee !== undefined;
 
-                // 1. 本地狀態即時更新 (包含精確的連動切割比對)
-                setTasks(prev => {
-                    return prev.map(t => {
-                        const cCodeStr = String(t.code).trim();
-                        const isSelf = t.id === tId;
-                        
-                        // 精確判斷：有小數點，且小數點前面的數字等於母任務代碼
-                        const isChildOfTarget = isParent && cCodeStr.includes('.') && cCodeStr.split('.')[0] === targetPCode;
-                        const isSameGroup = String(t.activityId) === targetActivityId && String(t.type).trim().toUpperCase() === targetType;
+                // 找出所有需要連動的子任務
+                const childrenToUpdate = doCascade ? tasks.filter(t => {
+                    const tCode = String(t.code).trim();
+                    const isSameActivity = String(t.activityId) === String(targetTask.activityId);
+                    const isSameType = String(t.type).trim().toUpperCase() === String(targetTask.type).trim().toUpperCase();
+                    const isChild = tCode.includes('.') && tCode.split('.')[0].trim() === targetPCode;
+                    return isSameActivity && isSameType && isChild;
+                }) : [];
 
-                        if (isSelf) {
-                            return { ...t, ...updates };
-                        } else if (isChildOfTarget && isSameGroup && updates.assignee !== undefined) {
-                            // 子任務連動變更為同一個負責人
-                            return { ...t, assignee: updates.assignee };
-                        }
-                        return t;
+                // 1. 同步更新本地 State
+                setTasks(prev => prev.map(t => {
+                    if (t.id === tId) return { ...t, ...updates };
+                    if (doCascade && childrenToUpdate.some(c => c.id === t.id)) {
+                        return { ...t, assignee: updates.assignee };
+                    }
+                    return t;
+                }));
+
+                // 2. 更新母任務到 GAS
+                callGAS({ action: 'updateTask', taskId: tId, ...updates });
+
+                // 3. 循序非同步寫入子任務 (加入延遲避免 GAS 觸發頻率限制)
+                if (doCascade && childrenToUpdate.length > 0) {
+                    childrenToUpdate.forEach((c, idx) => {
+                        setTimeout(() => {
+                            callGAS({ action: 'updateTask', taskId: c.id, assignee: updates.assignee });
+                        }, (idx + 1) * 200);
                     });
-                });
-
-                // 2. 更新被點擊的母任務本身到 Google
-                await callGAS({ action: 'updateTask', taskId: tId, ...updates });
-
-                // 3. 循序非同步寫入子任務 (Async Queue 避免塞車漏寫)
-                if (isParent && updates.assignee !== undefined) {
-                    const children = tasks.filter(t => {
-                        const cCodeStr = String(t.code).trim();
-                        return String(t.activityId) === targetActivityId &&
-                               String(t.type).trim().toUpperCase() === targetType &&
-                               cCodeStr.includes('.') && cCodeStr.split('.')[0] === targetPCode;
-                    });
-                    
-                    (async () => {
-                        for (const c of children) {
-                            await callGAS({ action: 'updateTask', taskId: c.id, assignee: updates.assignee });
-                        }
-                    })();
                 }
             };
 
             // --- 🚀 處理專案連動所有任務邏輯 ---
             const handleUpdateActivity = async (actId, updates) => {
+                const doCascade = updates.assignee !== undefined;
+                const actTasks = doCascade ? tasks.filter(t => String(t.activityId) === String(actId)) : [];
+
                 setActivities(prev => prev.map(a => a.id === actId ? { ...a, ...updates } : a));
                 
                 // 若更換專案負責人，本地立刻把該專案下所有任務刷過去
-                if (updates.assignee !== undefined) {
+                if (doCascade) {
                     setTasks(prev => prev.map(t => String(t.activityId) === String(actId) ? { ...t, assignee: updates.assignee } : t));
                 }
 
-                await callGAS({ action: 'updateActivity', activityId: actId, ...updates });
+                callGAS({ action: 'updateActivity', activityId: actId, ...updates });
 
                 // 循序寫入該專案底下所有任務
-                if (updates.assignee !== undefined) {
-                    const actTasks = tasks.filter(t => String(t.activityId) === String(actId));
-                    (async () => {
-                        for (const t of actTasks) {
-                            await callGAS({ action: 'updateTask', taskId: t.id, assignee: updates.assignee });
-                        }
-                    })();
+                if (doCascade && actTasks.length > 0) {
+                    actTasks.forEach((t, idx) => {
+                        setTimeout(() => {
+                            callGAS({ action: 'updateTask', taskId: t.id, assignee: updates.assignee });
+                        }, (idx + 1) * 100);
+                    });
                 }
             };
 
@@ -959,7 +953,6 @@
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <select value={act.status} onChange={(e) => handleUpdateActivity(act.id, { status: e.target.value })} className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`} disabled={!isAdmin}><option value="籌備中">籌備中</option><option value="進行中">進行中</option><option value="已完工">已完工</option><option value="結案">結案</option></select>
                                                         
-                                                        {/* --- 首頁：專案負責人下拉選單 --- */}
                                                         <div className={`flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg transition-colors relative ${isAdmin ? 'hover:bg-slate-100 cursor-pointer' : 'opacity-70'}`}>
                                                             <i data-lucide="user" className="w-3 h-3 text-slate-400 flex-shrink-0"></i>
                                                             <select 
