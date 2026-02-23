@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IMPR 專案管考系統 - 企業版 v8.5</title>
+    <title>IMPR 專案管考系統 - 企業版 v10.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -54,7 +54,6 @@
         input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #e2e8f0; border-radius: 2px; }
         
-        /* 鎖定狀態的 Range 樣式 */
         input[type=range]:disabled::-webkit-slider-thumb { background: #cbd5e1; cursor: not-allowed; }
         input[type=range]:disabled::-webkit-slider-runnable-track { cursor: not-allowed; }
 
@@ -100,109 +99,34 @@
         const logoUrl = "logo.png";
         
         // ---------------------------------------------------------
-        // 🚀 Google Sheet 真實 API 網址 (您剛部署的最新網址)
+        // 🚀 Google Sheet 真實 API 網址
         // ---------------------------------------------------------
         const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx9VoZwkmlDoL-3uCirDrqF_N66Ti00WWe3J-f7IQbwP9awhtx8lrPyJshla3dRP3h8/exec"; 
         
-        // --- 1. 預設名單 (已移除假資料) ---
         const DEFAULT_MEMBERS = [
-            { id: 1, username: 'Joseph', password: '123', role: 'admin', name: 'Joseph' }
+            { id: 1, username: 'joseph', password: '123', role: 'admin', name: 'Joseph' }
         ];
 
-        // --- 2. 範本設定 (精確對照 SURVEY_TEMPLATE.csv) ---
+        // --- 範本設定 ---
         const SURVEY_TEMPLATE = [
-            { code: '1', name: '基本場地條件' },
-            { code: '1.1', name: '場地實際可使用空間' },
-            { code: '1.2', name: '天花板高度（影響背板、燈光、LED）' },
-            { code: '1.3', name: '柱子位置是否影響視線或動線' },
-            { code: '1.4', name: '地面材質（地毯／磁磚／草地／柏油）' },
-            { code: '1.5', name: '是否可釘、可貼、可吊掛' },
-            { code: '1.6', name: '是否有噪音或環境干擾（外部施工、車流）' },
-            { code: '2', name: '進出場與動線' },
-            { code: '2.1', name: '工作人員進場動線' },
-            { code: '2.2', name: '貴賓進場動線（是否與民眾分流）' },
-            { code: '2.3', name: '媒體進出動線' },
-            { code: '2.4', name: '與會者進出動線' },
-            { code: '2.5', name: '場地方指定出入口是否有管制' },
-            { code: '2.6', name: '是否有貨梯或後門可進大型設備' },
-            { code: '2.7', name: '進撤場時間是否足夠' },
-            { code: '3', name: '舞台與主要活動區' },
-            { code: '3.1', name: '舞台預定位置是否合理' },
-            { code: '4', name: 'AV 與技術條件' },
-            { code: '4.8', name: '網路來源（有線／無線／專線）' },
-            { code: '5', name: '報到與接待區' },
-            { code: '5.1', name: '報到桌可設置位置' },
-            { code: '5.2', name: '報到動線是否順暢' },
-            { code: '5.3', name: '是否有遮雨／遮陽空間' },
-            { code: '5.4', name: '報到區是否影響主要動線' },
-            { code: '5.5', name: '識別證、資料袋擺放空間' },
-            { code: '5.6', name: '是否可加設臨時補報區' },
-            { code: '5.7', name: '口譯設備放置區' },
-            { code: '6', name: '貴賓與後勤空間' },
-            { code: '6.1', name: '貴賓休息室是否可用' },
-            { code: '6.2', name: '工作人員置物空間' },
-            { code: '6.3', name: '行李暫放位置' },
-            { code: '6.4', name: '化妝室距離與動線' },
-            { code: '6.5', name: '無障礙設施是否齊備' },
-            { code: '7', name: '展攤／海報區（若有）' },
-            { code: '7.1', name: '展攤／海報可用空間尺寸' },
-            { code: '7.2', name: '攤位／海報動線是否順暢' }
+            { code: '1', name: '基本場地條件' }, { code: '1.1', name: '場地實際可使用空間' }, { code: '1.2', name: '天花板高度（影響背板、燈光、LED）' }, { code: '1.3', name: '柱子位置是否影響視線或動線' }, { code: '1.4', name: '地面材質（地毯／磁磚／草地／柏油）' }, { code: '1.5', name: '是否可釘、可貼、可吊掛' }, { code: '1.6', name: '是否有噪音或環境干擾（外部施工、車流）' },
+            { code: '2', name: '進出場與動線' }, { code: '2.1', name: '工作人員進場動線' }, { code: '2.2', name: '貴賓進場動線（是否與民眾分流）' }, { code: '2.3', name: '媒體進出動線' }, { code: '2.4', name: '與會者進出動線' }, { code: '2.5', name: '場地方指定出入口是否有管制' }, { code: '2.6', name: '是否有貨梯或後門可進大型設備' }, { code: '2.7', name: '進撤場時間是否足夠' },
+            { code: '3', name: '舞台與主要活動區' }, { code: '3.1', name: '舞台預定位置是否合理' },
+            { code: '4', name: 'AV 與技術條件' }, { code: '4.8', name: '網路來源（有線／無線／專線）' },
+            { code: '5', name: '報到與接待區' }, { code: '5.1', name: '報到桌可設置位置' }, { code: '5.2', name: '報到動線是否順暢' }, { code: '5.3', name: '是否有遮雨／遮陽空間' }, { code: '5.4', name: '報到區是否影響主要動線' }, { code: '5.5', name: '識別證、資料袋擺放空間' }, { code: '5.6', name: '是否可加設臨時補報區' }, { code: '5.7', name: '口譯設備放置區' },
+            { code: '6', name: '貴賓與後勤空間' }, { code: '6.1', name: '貴賓休息室是否可用' }, { code: '6.2', name: '工作人員置物空間' }, { code: '6.3', name: '行李暫放位置' }, { code: '6.4', name: '化妝室距離與動線' }, { code: '6.5', name: '無障礙設施是否齊備' },
+            { code: '7', name: '展攤／海報區（若有）' }, { code: '7.1', name: '展攤／海報可用空間尺寸' }, { code: '7.2', name: '攤位／海報動線是否順暢' }
         ];
 
-        // --- 3. 範本設定 (精確對照 ITEM_TEMPLATE.csv) ---
         const ITEM_TEMPLATE = [
-            { code: '1', name: '專案統籌' },
-            { code: '1.1', name: '專案時程規劃' },
-            { code: '1.2', name: '預算編列與控管' },
-            { code: '1.3', name: '內部工作分工與窗口確認' },
-            { code: '1.4', name: '風險盤點與備援方案' },
-            { code: '1.5', name: '定期進度會議召開' },
-            { code: '2', name: '埸地作業' },
-            { code: '2.1', name: '場地評估與場勘' },
-            { code: '2.2', name: '檔期確認與租借合約' },
-            { code: '2.3', name: '平面圖確認（舞台、座位、動線）' },
-            { code: '2.4', name: '用電、網路、進出場時段確認' },
-            { code: '2.5', name: '場地方規範與限制確認' },
-            { code: '2.6', name: '公共意外險含食物中毒' },
-            { code: '3', name: '視覺設計與輸出物' },
-            { code: '3.1', name: '主視覺設計' },
-            { code: '3.2', name: '週邊設計' },
-            { code: '3.3', name: '輸出尺寸與材質確認' },
-            { code: '3.4', name: '校稿與最終檔確認' },
-            { code: '3.5', name: '舞台背板尺寸與固定方式' },
-            { code: '3.6', name: '出席名單最終版' },
-            { code: '4', name: 'AV 技術整合' },
-            { code: '4.1', name: '燈光配置（舞台／觀眾區）' },
-            { code: '4.2', name: '音響系統確認' },
-            { code: '6', name: '報到與現場接待' },
-            { code: '6.1', name: '報名系統／名單整理' },
-            { code: '6.2', name: '現場報到流程設計' },
-            { code: '6.3', name: '報到人力配置' },
-            { code: '6.4', name: '證件／資料袋準備' },
-            { code: '6.5', name: '現場諮詢窗口安排' },
-            { code: '6.6', name: '臨時名單與補報處理' },
-            { code: '6.7', name: '伴手禮準備(若有)' },
-            { code: '7', name: '現場佈置與撤場規劃' },
-            { code: '7.1', name: '舞台搭設' },
-            { code: '7.2', name: '背板與輸出物安裝' },
-            { code: '7.3', name: '桌椅與動線配置' },
-            { code: '7.4', name: '報到區／展示區設置' },
-            { code: '7.5', name: '現場指引標示' },
-            { code: '7.6', name: '撤場與復原' },
-            { code: '7.7', name: '表演團體確認' },
-            { code: '7.8', name: '桌花預定' },
-            { code: '8', name: '主持與流程控管' },
-            { code: '8.1', name: '主持人腳本撰寫' },
-            { code: '8.2', name: '議程時間控管' },
-            { code: '8.3', name: '上下場銜接' },
-            { code: '8.4', name: '臨時變動應變' },
-            { code: '8.5', name: '講者超時處理' },
-            { code: '11', name: '學術與展示' },
-            { code: '11.3', name: '展示區動線與區位規劃' },
-            { code: '11.4', name: '論文發表者名單彙整' },
-            { code: '11.5', name: '編號與張貼位置對應表' },
-            { code: '11.6', name: '動線與停留空間規劃' },
-            { code: '11.7', name: '張貼與撤場時間規劃' }
+            { code: '1', name: '專案統籌' }, { code: '1.1', name: '專案時程規劃' }, { code: '1.2', name: '預算編列與控管' }, { code: '1.3', name: '內部工作分工與窗口確認' }, { code: '1.4', name: '風險盤點與備援方案' }, { code: '1.5', name: '定期進度會議召開' },
+            { code: '2', name: '埸地作業' }, { code: '2.1', name: '場地評估與場勘' }, { code: '2.2', name: '檔期確認與租借合約' }, { code: '2.3', name: '平面圖確認（舞台、座位、動線）' }, { code: '2.4', name: '用電、網路、進出場時段確認' }, { code: '2.5', name: '場地方規範與限制確認' }, { code: '2.6', name: '公共意外險含食物中毒' },
+            { code: '3', name: '視覺設計與輸出物' }, { code: '3.1', name: '主視覺設計' }, { code: '3.2', name: '週邊設計' }, { code: '3.3', name: '輸出尺寸與材質確認' }, { code: '3.4', name: '校稿與最終檔確認' }, { code: '3.5', name: '舞台背板尺寸與固定方式' }, { code: '3.6', name: '出席名單最終版' },
+            { code: '4', name: 'AV 技術整合' }, { code: '4.1', name: '燈光配置（舞台／觀眾區）' }, { code: '4.2', name: '音響系統確認' },
+            { code: '6', name: '報到與現場接待' }, { code: '6.1', name: '報名系統／名單整理' }, { code: '6.2', name: '現場報到流程設計' }, { code: '6.3', name: '報到人力配置' }, { code: '6.4', name: '證件／資料袋準備' }, { code: '6.5', name: '現場諮詢窗口安排' }, { code: '6.6', name: '臨時名單與補報處理' }, { code: '6.7', name: '伴手禮準備(若有)' },
+            { code: '7', name: '現場佈置與撤場規劃' }, { code: '7.1', name: '舞台搭設' }, { code: '7.2', name: '背板與輸出物安裝' }, { code: '7.3', name: '桌椅與動線配置' }, { code: '7.4', name: '報到區／展示區設置' }, { code: '7.5', name: '現場指引標示' }, { code: '7.6', name: '撤場與復原' }, { code: '7.7', name: '表演團體確認' }, { code: '7.8', name: '桌花預定' },
+            { code: '8', name: '主持與流程控管' }, { code: '8.1', name: '主持人腳本撰寫' }, { code: '8.2', name: '議程時間控管' }, { code: '8.3', name: '上下場銜接' }, { code: '8.4', name: '臨時變動應變' }, { code: '8.5', name: '講者超時處理' },
+            { code: '11', name: '學術與展示' }, { code: '11.3', name: '展示區動線與區位規劃' }, { code: '11.4', name: '論文發表者名單彙整' }, { code: '11.5', name: '編號與張貼位置對應表' }, { code: '11.6', name: '動線與停留空間規劃' }, { code: '11.7', name: '張貼與撤場時間規劃' }
         ];
 
         const IMPR_LOGO_SVG = (className = "w-12 h-12") => (
@@ -213,23 +137,19 @@
             </svg>
         );
 
-        // --- 輔助函式：取得正確大小寫的負責人名稱 ---
+        // --- 強力輔助函式：取得正確的負責人 Username (解決大小寫容錯與選單綁定) ---
         const getAssigneeValue = (members, assigneeStr) => {
             if (!assigneeStr) return "";
             const match = String(assigneeStr).trim().toLowerCase();
             const member = members.find(m => 
-                String(m.name || '').trim().toLowerCase() === match || 
-                String(m.username || '').trim().toLowerCase() === match
+                String(m.username || '').trim().toLowerCase() === match || 
+                String(m.name || '').trim().toLowerCase() === match
             );
-            return member ? String(member.name || member.username).trim() : String(assigneeStr).trim();
+            return member ? member.username : ""; // 強制使用 username 作為唯一 value
         };
 
-        // --- API 呼叫模組 ---
         const callGAS = async (payload) => { 
-            if (!GAS_API_URL) {
-                console.warn("未設定 GAS_API_URL，使用本地模擬模式"); 
-                return { status: 'success' }; 
-            }
+            if (!GAS_API_URL) return { status: 'success' }; 
             try {
                 const response = await fetch(GAS_API_URL, {
                     method: 'POST',
@@ -258,7 +178,7 @@
                         <h2 className="text-lg sm:text-xl font-black text-slate-800 mb-8 tracking-tight italic">專案進度管考系統</h2>
                         <div className="space-y-3">
                             <input type="text" value={u} onChange={e=>setU(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Username (如: Joseph)" />
-                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Password (如: 123)" />
+                            <input type="password" value={p} onChange={e=>setP(e.target.value)} className="w-full px-5 py-3 sm:px-6 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-impr-orange/10 focus:border-impr-orange transition-all" placeholder="Password (預設: 123)" />
                         </div>
                         {error && <div className="text-red-500 text-xs font-bold mt-4 bg-red-50 p-2 rounded">{error}</div>}
                         <button onClick={() => onLogin(u, p)} disabled={loading} className="w-full mt-8 py-3.5 sm:py-4 bg-impr-orange text-white font-black rounded-2xl hover:bg-orange-600 transition-all shadow-lg active:scale-95">{loading ? "連線驗證中..." : "登入系統"}</button>
@@ -509,7 +429,7 @@
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {members.length === 0 ? (
-                            <div className="col-span-full p-8 text-center text-slate-400 italic">尚無團隊成員資料。</div>
+                            <div className="col-span-full p-8 text-center text-slate-400 font-bold">尚無團隊成員資料。</div>
                         ) : members.map(m => (
                             <div key={m.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-impr-orange/30 transition-all">
                                 <div className="flex items-center gap-4">
@@ -563,8 +483,10 @@
                 return false;
             };
 
+            const isAdmin = String(user?.role || '').trim().toLowerCase() === 'admin';
+
             const checkPermission = (assigneeName) => {
-                if (user?.role === 'admin') return true;
+                if (isAdmin) return true;
                 if (!assigneeName || String(assigneeName).trim() === '') return true; 
                 return user?.name?.toLowerCase() === String(assigneeName).toLowerCase() || 
                        user?.username?.toLowerCase() === String(assigneeName).toLowerCase();
@@ -595,22 +517,20 @@
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                                             
                                             {/* 母任務指派 (改變時會連帶更新子任務) */}
-                                            <div className="md:col-span-2 relative flex items-center bg-white border border-slate-200 rounded-xl px-2">
+                                            <div className={`md:col-span-2 relative flex items-center bg-white border border-slate-200 rounded-xl px-2 ${!canEditParent ? 'opacity-70 bg-slate-50' : 'hover:border-impr-orange transition-colors'}`}>
                                                 <i data-lucide="user" className="w-3.5 h-3.5 text-slate-400 mr-1 flex-shrink-0"></i>
                                                 <select 
                                                     value={getAssigneeValue(members, parent.assignee)} 
                                                     disabled={!canEditParent} 
                                                     onChange={(e) => onUpdate(parent.id, { assignee: e.target.value })} 
-                                                    className="w-full bg-transparent py-2.5 text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none disabled:cursor-not-allowed"
+                                                    className={`w-full bg-transparent py-2.5 text-xs font-bold outline-none appearance-none ${!canEditParent ? 'text-slate-400 cursor-not-allowed' : 'text-blue-600 cursor-pointer'} relative z-10`}
                                                 >
                                                     <option value="">未指派</option>
-                                                    {members.map(m => {
-                                                        const dName = String(m.name || m.username).trim();
-                                                        if (!dName) return null;
-                                                        return <option key={m.id} value={dName}>{dName}</option>;
-                                                    })}
+                                                    {members.map(m => (
+                                                        <option key={m.id} value={m.username}>{m.name || m.username}</option>
+                                                    ))}
                                                 </select>
-                                                <i data-lucide="chevron-down" className="w-3 h-3 text-slate-400 flex-shrink-0 pointer-events-none"></i>
+                                                <i data-lucide="chevron-down" className="w-3 h-3 text-slate-400 absolute right-2 pointer-events-none"></i>
                                             </div>
                                             
                                             <div className="md:col-span-2"><input type="date" defaultValue={parent.dueDate} disabled={!canEditParent} onBlur={(e) => onUpdate(parent.id, { dueDate: e.target.value })} className={`editable-field w-full bg-white px-3 py-2.5 rounded-xl text-xs font-mono font-bold border border-slate-200 outline-none ${isParentDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
@@ -631,22 +551,20 @@
                                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pl-0 sm:pl-11">
                                                     
                                                     {/* --- 單一任務指派 (移除干擾事件，修復下拉 Bug) --- */}
-                                                    <div className="md:col-span-2 relative flex items-center bg-slate-50 border border-transparent hover:border-slate-200 transition-colors rounded-xl px-2">
+                                                    <div className={`md:col-span-2 relative flex items-center bg-slate-50 border border-transparent rounded-xl px-2 ${!canEditChild ? 'opacity-70' : 'hover:border-slate-300 transition-colors'}`}>
                                                         <i data-lucide="user" className="w-3 h-3 text-slate-400 mr-1 flex-shrink-0"></i>
                                                         <select 
                                                             value={getAssigneeValue(members, child.assignee)} 
                                                             disabled={!canEditChild} 
                                                             onChange={(e) => onUpdate(child.id, { assignee: e.target.value })} 
-                                                            className="w-full bg-transparent py-2 text-xs font-bold text-slate-600 outline-none cursor-pointer appearance-none disabled:cursor-not-allowed"
+                                                            className={`w-full bg-transparent py-2 text-xs font-bold outline-none appearance-none ${!canEditChild ? 'text-slate-400 cursor-not-allowed' : 'text-blue-600 cursor-pointer'} relative z-10`}
                                                         >
                                                             <option value="">未指派</option>
-                                                            {members.map(m => {
-                                                                const dName = String(m.name || m.username).trim();
-                                                                if (!dName) return null;
-                                                                return <option key={m.id} value={dName}>{dName}</option>;
-                                                            })}
+                                                            {members.map(m => (
+                                                                <option key={m.id} value={m.username}>{m.name || m.username}</option>
+                                                            ))}
                                                         </select>
-                                                        <i data-lucide="chevron-down" className="w-3 h-3 text-slate-400 flex-shrink-0 pointer-events-none"></i>
+                                                        <i data-lucide="chevron-down" className="w-3 h-3 text-slate-400 absolute right-2 pointer-events-none"></i>
                                                     </div>
                                                     
                                                     <div className="md:col-span-2"><input type="date" defaultValue={child.dueDate} disabled={!canEditChild} onBlur={(e) => onUpdate(child.id, { dueDate: e.target.value })} className={`editable-field w-full bg-slate-50 px-3 py-2 rounded-xl text-xs font-mono font-bold border border-transparent outline-none ${isChildDelayed ? 'text-impr-danger font-black' : 'text-slate-500'}`} /></div>
@@ -735,10 +653,10 @@
         const App = () => {
             const [user, setUser] = useState(null);
             
-            // 強制清空快取金鑰 v8.5
+            // 強制清空快取金鑰 v10.0
             const [members, setMembers] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_team_v8.5');
+                    const cached = localStorage.getItem('impr_team_v10.0');
                     const parsed = cached ? JSON.parse(cached) : null;
                     return parsed && parsed.length > 0 ? parsed : [];
                 } catch { return []; }
@@ -746,14 +664,14 @@
 
             const [activities, setActivities] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_activities_v8.5');
+                    const cached = localStorage.getItem('impr_activities_v10.0');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
 
             const [tasks, setTasks] = useState(() => {
                 try {
-                    const cached = localStorage.getItem('impr_tasks_v8.5');
+                    const cached = localStorage.getItem('impr_tasks_v10.0');
                     return cached ? JSON.parse(cached) : [];
                 } catch { return []; }
             });
@@ -772,11 +690,11 @@
 
             useEffect(() => {
                 if (activities && activities.length > 0) {
-                    localStorage.setItem('impr_activities_v8.5', JSON.stringify(activities));
-                    localStorage.setItem('impr_tasks_v8.5', JSON.stringify(tasks));
+                    localStorage.setItem('impr_activities_v10.0', JSON.stringify(activities));
+                    localStorage.setItem('impr_tasks_v10.0', JSON.stringify(tasks));
                 }
                 if (members && members.length > 0) {
-                    localStorage.setItem('impr_team_v8.5', JSON.stringify(members));
+                    localStorage.setItem('impr_team_v10.0', JSON.stringify(members));
                 }
             }, [activities, tasks, members]);
 
@@ -786,8 +704,12 @@
                 if (GAS_API_URL) {
                     const res = await callGAS({ action: 'getData', role: currUser?.role, name: currUser?.name });
                     if (res.status === 'success') {
-                        if (res.members !== undefined) {
-                            setMembers(res.members); // 無條件以 Sheet 為準
+                        // 無條件以 Sheet 為準，完全消滅假資料
+                        if (res.members !== undefined && res.members.length > 0) {
+                            setMembers(res.members);
+                        } else {
+                            setError('⚠️ 警告：Google Sheet 未回傳任何人員名單，請確保您已在 GAS 中發布為【新版本】！');
+                            if (members.length === 0) setMembers(DEFAULT_MEMBERS); // 避免整個系統掛掉
                         }
                         setActivities(res.activities || []);
                         setTasks(res.tasks || []);
@@ -800,17 +722,14 @@
                         setTimeout(() => {
                             if (members.length === 0) setMembers(DEFAULT_MEMBERS);
                             const defaultActs = [
-                                { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01', assignee: 'Joseph' },
-                                { id: 'ACT-1771370518075', name: 'test', clientName: 'aaa', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-20', assignee: 'Joseph' },
-                                { id: 'ACT-1771370620830', name: 'dad', clientName: '11112', location: '', status: '進行中', startDate: '2026-02-04', endDate: '2026-03-12', assignee: 'Joseph' },
-                                { id: 'ACT-1771371867101', name: '1213', clientName: '5688', location: '', status: '進行中', startDate: '2026-02-18', endDate: '2026-03-13', assignee: 'Joseph' }
+                                { id: 'ACT-1771325908466', name: '2026 test', clientName: 'test', location: '', status: '進行中', startDate: '2026-03-17', endDate: '2026-04-01', assignee: 'joseph' }
                             ];
                             setActivities(defaultActs);
                             
                             let allTasks = [];
                             defaultActs.forEach(act => {
-                                SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: 'Joseph', dueDate: act.endDate, note: '' }));
-                                ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: 'Joseph', dueDate: act.endDate, note: '' }));
+                                SURVEY_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_s_${i}`, activityId: act.id, ...t, type: 'SURVEY', status: 0, isApplicable: true, assignee: 'joseph', dueDate: act.endDate, note: '' }));
+                                ITEM_TEMPLATE.forEach((t, i) => allTasks.push({ id: `${act.id}_i_${i}`, activityId: act.id, ...t, type: 'ITEM', status: 0, isApplicable: true, assignee: 'joseph', dueDate: act.endDate, note: '' }));
                             });
                             setTasks(allTasks);
                             setLoading(false);
@@ -828,7 +747,8 @@
                 if (GAS_API_URL) {
                     const res = await callGAS({ action: 'login', username: u, password: p });
                     if (res.status === 'success') {
-                        setUser(res.user);
+                        // 確保存入 username 作為後續比對依據
+                        setUser({ username: res.user.username, name: res.user.name, role: res.user.role });
                         fetchData(res.user);
                     } else {
                         setError(res.message || '帳號或密碼錯誤');
@@ -843,7 +763,7 @@
                         );
                         
                         if (foundUser) {
-                            setUser({ name: foundUser.name, role: foundUser.role });
+                            setUser({ username: foundUser.username, name: foundUser.name, role: foundUser.role });
                             fetchData({ name: foundUser.name, role: foundUser.role });
                         } else {
                             setError('帳號或密碼錯誤');
@@ -853,12 +773,12 @@
                 }
             };
 
-            // --- 修改：處理母任務連動子任務邏輯 ---
+            // --- 處理母任務連動子任務邏輯 ---
             const handleUpdateTask = async (tId, updates) => {
                 const targetTask = tasks.find(t => t.id === tId);
                 const isParent = targetTask && !String(targetTask.code).includes('.');
 
-                // 1. 本地狀態即時更新 (包含連動邏輯)
+                // 本地狀態即時更新 (包含連動邏輯)
                 setTasks(prev => {
                     let newTasks = [...prev];
                     
@@ -879,21 +799,21 @@
                     return newTasks;
                 });
 
-                // 2. 伺服器更新
+                // 伺服器更新
                 await callGAS({ action: 'updateTask', taskId: tId, ...updates });
 
-                // 如果是母任務且更新了負責人，背景分批呼叫 API 更新子任務 (避免塞車)
+                // 背景分批呼叫 API 更新子任務 (避免塞車)
                 if (isParent && updates.assignee !== undefined) {
                     const children = tasks.filter(t => t.activityId === targetTask.activityId && String(t.code).startsWith(targetTask.code + '.') && t.type === targetTask.type);
                     children.forEach((c, idx) => {
                         setTimeout(() => {
                             callGAS({ action: 'updateTask', taskId: c.id, assignee: updates.assignee });
-                        }, (idx + 1) * 300); // 錯開 API 請求時間
+                        }, (idx + 1) * 300);
                     });
                 }
             };
 
-            // --- 修改：處理專案連動所有任務邏輯 ---
+            // --- 處理專案連動所有任務邏輯 ---
             const handleUpdateActivity = async (actId, updates) => {
                 setActivities(prev => prev.map(a => a.id === actId ? { ...a, ...updates } : a));
                 
@@ -919,7 +839,7 @@
                 if(!form.name) return;
                 setLoading(true);
                 
-                const assigneeName = form.manager || user.name;
+                const assigneeName = form.manager || user.username;
                 const newActId = 'ACT-' + Date.now();
                 const newAct = { id: newActId, name: form.name, clientName: form.clientName || '新客戶', location: form.location, status: '籌備中', startDate: form.startDate, endDate: form.endDate, assignee: assigneeName };
                 
@@ -940,7 +860,7 @@
 
             const handleCreateTask = async (actId, taskData) => {
                 const newId = 't' + Date.now();
-                const newTask = { id: newId, activityId: actId, code: taskData.code, name: taskData.name, type: taskData.type, status: 0, isApplicable: true, assignee: user.name, note: '', dueDate: '' };
+                const newTask = { id: newId, activityId: actId, code: taskData.code, name: taskData.name, type: taskData.type, status: 0, isApplicable: true, assignee: user.username, note: '', dueDate: '' };
                 setTasks(prev => [...prev, newTask]);
                 await callGAS({ action: 'createTask', ...newTask });
             };
@@ -981,6 +901,8 @@
                     return viewTab === 'history' ? isHistory : !isHistory;
                 });
             }, [activities, viewTab]);
+
+            const isAdmin = String(user?.role || '').trim().toLowerCase() === 'admin';
 
             if (!user) return <LoginPage onLogin={handleLogin} loading={loading} error={error} />;
 
@@ -1026,23 +948,23 @@
                                                 {delayedCount > 0 && <div className="absolute top-4 right-4 bg-red-50 text-red-600 px-3 py-1 rounded-full text-xs font-bold border border-red-100 flex items-center gap-1 shadow-sm"><i data-lucide="alert-triangle" className="w-3.5 h-3.5"></i> {delayedCount} 項延遲</div>}
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-2">
-                                                        <select value={act.status} onChange={(e) => handleUpdateActivity(act.id, { status: e.target.value })} className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`} disabled={user?.role !== 'admin'}><option value="籌備中">籌備中</option><option value="進行中">進行中</option><option value="已完工">已完工</option><option value="結案">結案</option></select>
+                                                        <select value={act.status} onChange={(e) => handleUpdateActivity(act.id, { status: e.target.value })} className={`px-2 py-1 rounded-lg text-[10px] font-black border uppercase tracking-widest outline-none cursor-pointer ${['已完工','結案'].includes(act.status) ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`} disabled={!isAdmin}><option value="籌備中">籌備中</option><option value="進行中">進行中</option><option value="已完工">已完工</option><option value="結案">結案</option></select>
                                                         
-                                                        {/* --- 專案負責人下拉選單 --- */}
-                                                        <div className="flex items-center gap-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg transition-colors cursor-pointer relative">
+                                                        <div className={`flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg transition-colors relative ${isAdmin ? 'hover:bg-slate-100 cursor-pointer' : 'opacity-70'}`}>
                                                             <i data-lucide="user" className="w-3 h-3 text-slate-400 flex-shrink-0"></i>
                                                             <select 
                                                                 value={getAssigneeValue(members, act.assignee)} 
-                                                                onChange={(e) => handleUpdateActivity(act.id, { assignee: e.target.value })}
-                                                                className="bg-transparent text-[10px] font-bold text-slate-600 outline-none cursor-pointer appearance-none pr-4 w-full disabled:cursor-not-allowed"
-                                                                disabled={user?.role !== 'admin'}
+                                                                onChange={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleUpdateActivity(act.id, { assignee: e.target.value });
+                                                                }}
+                                                                className={`bg-transparent text-[10px] font-bold outline-none appearance-none pr-4 w-full relative z-10 ${isAdmin ? 'text-blue-600 cursor-pointer' : 'text-slate-500 cursor-not-allowed'}`}
+                                                                disabled={!isAdmin}
                                                             >
                                                                 <option value="">未指派負責人</option>
-                                                                {members.map(m => {
-                                                                    const dName = String(m.name || m.username).trim();
-                                                                    if(!dName) return null;
-                                                                    return <option key={m.id} value={dName}>{dName}</option>;
-                                                                })}
+                                                                {members.map(m => (
+                                                                    <option key={m.id} value={m.username}>{m.name || m.username}</option>
+                                                                ))}
                                                             </select>
                                                             <i data-lucide="chevron-down" className="w-2.5 h-2.5 text-slate-400 absolute right-2 pointer-events-none"></i>
                                                         </div>
@@ -1093,18 +1015,16 @@
                                     
                                     <div className="relative">
                                         <select 
-                                            className="w-full p-3 border rounded-xl font-bold text-sm text-slate-600 outline-none cursor-pointer appearance-none"
+                                            className="w-full p-3 border rounded-xl font-bold text-sm text-slate-600 outline-none cursor-pointer appearance-none relative z-10 bg-transparent"
                                             onChange={e => setForm({...form, manager: e.target.value})}
-                                            value={form.manager || user?.name || ''}
+                                            value={form.manager || user?.username || ''}
                                         >
                                             <option value="">請選擇專案負責人</option>
-                                            {members.map(m => {
-                                                const dName = String(m.name || m.username).trim();
-                                                if (!dName) return null;
-                                                return <option key={m.id} value={dName}>{dName}</option>;
-                                            })}
+                                            {members.map(m => (
+                                                <option key={m.id} value={m.username}>{m.name || m.username}</option>
+                                            ))}
                                         </select>
-                                        <i data-lucide="chevron-down" className="w-4 h-4 text-slate-400 absolute right-4 top-4 pointer-events-none"></i>
+                                        <i data-lucide="chevron-down" className="w-4 h-4 text-slate-400 absolute right-4 top-4 pointer-events-none z-0"></i>
                                     </div>
                                     
                                     <input type="text" placeholder="活動地點" className="w-full p-3 border rounded-xl font-bold text-sm" onChange={e=>setForm({...form, location: e.target.value})}/>
